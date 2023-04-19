@@ -283,7 +283,7 @@ namespace WPFSurfacePlot3D
                 // Axes labels
                 BillboardTextVisual3D label = new BillboardTextVisual3D();
                 label.Text = string.Format("{0:F2}", x);
-                label.Position = new Point3D(x * stretchX, minY - axesOffset, minZ);
+                label.Position = new Point3D(x * stretchX, minY - axesOffset, minZ - axesOffset);
                 axesLabelsModel.Children.Add(label);
 
                 // Grid lines
@@ -310,7 +310,7 @@ namespace WPFSurfacePlot3D
                 // Axes labels
                 BillboardTextVisual3D label = new BillboardTextVisual3D();
                 label.Text = string.Format("{0:F2}", y);
-                label.Position = new Point3D(minX * stretchX - axesOffset, y, minZ);
+                label.Position = new Point3D(minX * stretchX - axesOffset, y, minZ - axesOffset);
                 axesLabelsModel.Children.Add(label);
 
                 // Grid lines
