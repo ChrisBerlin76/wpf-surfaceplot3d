@@ -97,10 +97,10 @@ namespace WPFSurfacePlot3D
                     break;
 
                 case FunctionOptions.DataPlot:
-                    double[,] arrayOfPoints = new double[10, 15];
+                    double[,] arrayOfPoints = new double[10, 20];
                     for (int i = 0; i < 10; i++)
                     {
-                        for (int j = 0; j < 15; j++)
+                        for (int j = 0; j < 20; j++)
                         {
                             arrayOfPoints[i, j] = 10 * Math.Sin(Math.Sqrt(i * i + j * j)) / Math.Sqrt(i * i + j * j + 0.0001);
                         }

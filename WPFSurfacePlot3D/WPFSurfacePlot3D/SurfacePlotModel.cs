@@ -36,9 +36,9 @@ namespace WPFSurfacePlot3D
         public SurfacePlotModel()
         {
             Title = "New Surface Plot";
-            XAxisLabel = "x-Axis";
-            YAxisLabel = "y-Axis";
-            ZAxisLabel = "z-Axis";
+            XAxisLabel = "X";
+            YAxisLabel = "Y";
+            ZAxisLabel = "Z";
 
             ColorCoding = ColorCoding.ByLights;
 
@@ -66,10 +66,7 @@ namespace WPFSurfacePlot3D
             dataPoints = newDataArray;
             CreateColorValues();
 
-            RaisePropertyChanged("DataPoints");
-            RaisePropertyChanged("ColorValues");
-            RaisePropertyChanged("SurfaceBrush");
-            RaisePropertyChanged("Lights");
+            UpdateProperties();
         }
 
         public void PlotData(double[,] zData2DArray, double xMinimum, double xMaximum, double yMinimum, double yMaximum)
@@ -128,10 +125,15 @@ namespace WPFSurfacePlot3D
             DataPoints = CreateDataArrayFromFunction(function, xArray, yArray);
             CreateColorValues();
 
+            UpdateProperties();
+        }
+
+        private void UpdateProperties()
+        {
             RaisePropertyChanged("DataPoints");
             RaisePropertyChanged("ColorValues");
-            RaisePropertyChanged("SurfaceBrush");
             RaisePropertyChanged("Lights");
+            RaisePropertyChanged("SurfaceBrush");  // <-- This updates the visual 
         }
 
         private void CreateColorValues()
@@ -340,6 +342,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
+        private bool xYEqualLength;
+        public bool XYEqualLength
+        {
+            get { return xYEqualLength; }
+            set
+            {
+                xYEqualLength = value;
+                RaisePropertyChanged("XYEqualLength");
+            }
+        }
+
         #endregion
 
         /* // Do we actually need to keep any of these persistent variables for any reason...? (binding?)
@@ -446,7 +459,7 @@ namespace WPFSurfacePlot3D
         public double[,] GetZData(Point3D[,] data)
         {
             int n = data.GetLength(0);
-            int m = data.GetLength(0);
+            int m = data.GetLength(1);
             var K = new double[n, m];
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < m; j++)

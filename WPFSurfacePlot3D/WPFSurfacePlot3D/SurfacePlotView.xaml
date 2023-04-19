@@ -35,9 +35,15 @@
             CoordinateSystemLabelY="{Binding YAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
             CoordinateSystemLabelZ="{Binding ZAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
             >
+            <h:HelixViewport3D.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="WhiteSmoke" Offset="1" />
+                    <GradientStop Color="White" Offset="0"/>
+                </LinearGradientBrush>
+            </h:HelixViewport3D.Background>
 
             <h:HelixViewport3D.Camera>
-                <PerspectiveCamera LookDirection="1,1,-1" UpDirection="0,0,1"  FieldOfView="30"/>
+                <PerspectiveCamera LookDirection="1,1,-1" UpDirection="0,0,1"  FieldOfView="20"/>
             </h:HelixViewport3D.Camera>
 
             <!-- Lights -->
@@ -47,6 +53,7 @@
             <local:SurfacePlotVisual3D 
                 DataPoints="{Binding DataPoints, UpdateSourceTrigger=PropertyChanged}" 
                 ColorValues="{Binding ColorValues, UpdateSourceTrigger=PropertyChanged}" 
+                XYEqualLength="{Binding XYEqualLength, UpdateSourceTrigger=PropertyChanged}" 
                 SurfaceBrush="{Binding SurfaceBrush, UpdateSourceTrigger=PropertyChanged}" 
                 />
 
