@@ -38,7 +38,7 @@ namespace WPFSurfacePlot3D
             set { SetValue(DataPointsProperty, value); }
         }
 
-        public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(SamplePoints, ModelWasChanged));
+        public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(SamplePoints));
 
         /// <summary>
         /// Gets or sets the color values corresponding to the Points array, as a 2D-array of doubles.
@@ -52,7 +52,7 @@ namespace WPFSurfacePlot3D
             set { SetValue(ColorValuesProperty, value); }
         }
 
-        public static readonly DependencyProperty ColorValuesProperty = DependencyProperty.Register("ColorValues", typeof(double[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null, ModelWasChanged));
+        public static readonly DependencyProperty ColorValuesProperty = DependencyProperty.Register("ColorValues", typeof(double[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
 
         /// <summary>
         /// Gets or sets the brush used for the surface.
@@ -79,7 +79,6 @@ namespace WPFSurfacePlot3D
         {
             ((SurfacePlotVisual3D)d).UpdateModel();
             //((SurfacePlotVisual3D)d).RaiseModelUpdatedEvent();
-
         }
 
         private ContentControl controlObject = new ContentControl();
@@ -131,8 +130,8 @@ namespace WPFSurfacePlot3D
             double axesOffset = 0.05;
 
             // Get relevant constaints from the DataPoints object
-            int numberOfRows = DataPoints.GetUpperBound(0) + 1;
-            int numberOfColumns = DataPoints.GetUpperBound(1) + 1;
+            int numberOfRows = DataPoints.GetLength(0);
+            int numberOfColumns = DataPoints.GetLength(1);
 
             // Determine the x, y, and z ranges of the DataPoints collection
             double minX = double.MaxValue;
@@ -158,7 +157,7 @@ namespace WPFSurfacePlot3D
                     minX = Math.Min(minX, x);
                     minY = Math.Min(minY, y);
                     minZ = Math.Min(minZ, z);
-                    if (ColorValues != null)
+                    if (ColorValues != null && numberOfRows <= ColorValues.GetLength(0) && numberOfColumns <= ColorValues.GetLength(1))
                     {
                         maxColorValue = Math.Max(maxColorValue, ColorValues[i, j]);
                         minColorValue = Math.Min(minColorValue, ColorValues[i, j]);
@@ -296,7 +295,7 @@ namespace WPFSurfacePlot3D
             GeometryModel3D gridModel = new GeometryModel3D(gridBuilder.ToMesh(), Materials.Black);
 
             // Update model group
-            //this.Children.Add(axesLabelsModel);
+            this.Children.Add(axesLabelsModel);
             newModelGroup.Children.Add(surfaceModel);
             newModelGroup.Children.Add(surfaceMeshLinesModel);
             newModelGroup.Children.Add(gridModel);

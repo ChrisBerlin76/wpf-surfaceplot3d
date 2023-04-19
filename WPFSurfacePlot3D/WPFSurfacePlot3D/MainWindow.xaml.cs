@@ -34,10 +34,23 @@ namespace WPFSurfacePlot3D
         /// </summary>
         enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot };
 
+
+
         /// <summary>
         /// This function is called whenever the user selects a different demo function to plot.
         /// </summary>
         private void FunctionSelectionWasChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateFunction();
+        }
+
+        private void buttonUpdateFunction_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateFunction();
+        }
+
+
+        private void UpdateFunction()
         {
             FunctionOptions currentOption = FunctionOptions.Simple;
             Func<double, double, double> function;
@@ -106,5 +119,7 @@ namespace WPFSurfacePlot3D
         {
             Close();
         }
+
+
     }
 }

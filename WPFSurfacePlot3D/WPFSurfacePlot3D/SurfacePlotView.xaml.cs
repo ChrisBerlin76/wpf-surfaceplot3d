@@ -14,7 +14,8 @@ namespace WPFSurfacePlot3D
         {
             InitializeComponent();
             DataContext = LayoutRoot.DataContext;
-            hViewport.ZoomExtentsGesture = new KeyGesture(Key.Space);
+            //hViewport.ZoomExtentsGesture = new KeyGesture(Key.Space);
+            hViewport.TopViewGesture = new KeyGesture(Key.Space);
         }
 
         public Point3D[,] DataPoints
@@ -80,6 +81,19 @@ namespace WPFSurfacePlot3D
         }
 
         public static readonly DependencyProperty ShowMiniCoordinatesProperty = DependencyProperty.Register("ShowMiniCoordinates", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
-        
+
+        public bool Orthographic
+        {
+            get { return (bool)GetValue(OrthographicProperty); }
+            set { SetValue(OrthographicProperty, value); }
+        }
+
+        public static readonly DependencyProperty OrthographicProperty = DependencyProperty.Register("Orthographic", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
+
+
+        private void hViewport_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            hViewport.ZoomExtents();
+        }
     }
 }

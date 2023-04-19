@@ -17,7 +17,12 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Color code by gradient in y-direction using a gradient brush with white ambient light
         /// </summary>
-        ByGradientY
+        ByGradientY,
+
+        /// <summary>
+        /// Color code by Z-value using a gradient brush with white ambient light
+        /// </summary>
+        ByValueZ
     }
 
     class SurfacePlotModel : INotifyPropertyChanged
@@ -59,7 +64,12 @@ namespace WPFSurfacePlot3D
                 }
             }
             dataPoints = newDataArray;
+            CreateColorValues();
+
             RaisePropertyChanged("DataPoints");
+            RaisePropertyChanged("ColorValues");
+            RaisePropertyChanged("SurfaceBrush");
+            RaisePropertyChanged("Lights");
         }
 
         public void PlotData(double[,] zData2DArray, double xMinimum, double xMaximum, double yMinimum, double yMaximum)
@@ -116,8 +126,21 @@ namespace WPFSurfacePlot3D
             double[] yArray = CreateLinearlySpacedArray(yMinimum, yMaximum, ySampleSize);
 
             DataPoints = CreateDataArrayFromFunction(function, xArray, yArray);
+            CreateColorValues();
+
+            RaisePropertyChanged("DataPoints");
+            RaisePropertyChanged("ColorValues");
+            RaisePropertyChanged("SurfaceBrush");
+            RaisePropertyChanged("Lights");
+        }
+
+        private void CreateColorValues()
+        {
             switch (ColorCoding)
             {
+                case ColorCoding.ByValueZ:
+                    ColorValues = GetZData(DataPoints);
+                    break;
                 case ColorCoding.ByGradientY:
                     ColorValues = FindGradientY(DataPoints);
                     break;
@@ -125,9 +148,6 @@ namespace WPFSurfacePlot3D
                     ColorValues = null;
                     break;
             }
-            RaisePropertyChanged("DataPoints");
-            RaisePropertyChanged("ColorValues");
-            RaisePropertyChanged("SurfaceBrush");
         }
 
         #endregion
@@ -309,6 +329,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
+        private bool orthographic;
+        public bool Orthographic
+        {
+            get { return orthographic; }
+            set
+            {
+                orthographic = value;
+                RaisePropertyChanged("Orthographic");
+            }
+        }
+
         #endregion
 
         /* // Do we actually need to keep any of these persistent variables for any reason...? (binding?)
@@ -328,7 +359,18 @@ namespace WPFSurfacePlot3D
 
         public double[,] ColorValues { get; set; }
 
-        public ColorCoding ColorCoding { get; set; }
+
+        public ColorCoding colorCoding;
+        public ColorCoding ColorCoding
+        {
+            get { return colorCoding; }
+            set
+            {
+                colorCoding = value;
+                //RaisePropertyChanged("ColorCoding");
+                //RaisePropertyChanged("SurfaceBrush");
+            }
+        }
 
         public Model3DGroup Lights
         {
@@ -337,6 +379,9 @@ namespace WPFSurfacePlot3D
                 var group = new Model3DGroup();
                 switch (ColorCoding)
                 {
+                    case ColorCoding.ByValueZ:
+                        group.Children.Add(new AmbientLight(Colors.White));
+                        break;
                     case ColorCoding.ByGradientY:
                         group.Children.Add(new AmbientLight(Colors.White));
                         break;
@@ -360,8 +405,10 @@ namespace WPFSurfacePlot3D
                 // Brush = GradientBrushes.BlueWhiteRed;
                 switch (ColorCoding)
                 {
+                    case ColorCoding.ByValueZ:
+                        return BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
                     case ColorCoding.ByGradientY:
-                        return BrushHelper.CreateGradientBrush(Colors.Red, Colors.White, Colors.Blue);
+                        return BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
                     case ColorCoding.ByLights:
                         return Brushes.White;
                 }
@@ -381,8 +428,8 @@ namespace WPFSurfacePlot3D
                     // Finite difference approximation
                     var p10 = data[i + 1 < n ? i + 1 : i, j - 1 > 0 ? j - 1 : j];
                     var p00 = data[i - 1 > 0 ? i - 1 : i, j - 1 > 0 ? j - 1 : j];
-                    var p11 = data[i + 1 < n ? i + 1 : i, j + 1 < m ? j + 1 : j];
-                    var p01 = data[i - 1 > 0 ? i - 1 : i, j + 1 < m ? j + 1 : j];
+                    //var p11 = data[i + 1 < n ? i + 1 : i, j + 1 < m ? j + 1 : j];
+                    //var p01 = data[i - 1 > 0 ? i - 1 : i, j + 1 < m ? j + 1 : j];
 
                     //double dx = p01.X - p00.X;
                     //double dz = p01.Z - p00.Z;
@@ -392,6 +439,19 @@ namespace WPFSurfacePlot3D
                     double dz = p10.Z - p00.Z;
 
                     K[i, j] = dz / dy;
+                }
+            return K;
+        }
+
+        public double[,] GetZData(Point3D[,] data)
+        {
+            int n = data.GetLength(0);
+            int m = data.GetLength(0);
+            var K = new double[n, m];
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < m; j++)
+                {
+                    K[i, j] = data[i, j].Z;
                 }
             return K;
         }

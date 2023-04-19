@@ -57,6 +57,8 @@
                         IsReadOnly="False"
                         />
 
+                    <Button Content="Update Function" x:Name="buttonUpdateFunction" Click="buttonUpdateFunction_Click" Height="30"/>
+
                 </StackPanel>
             </ScrollViewer>
 
