@@ -1,6 +1,7 @@
 ﻿using HelixToolkit.Wpf;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -53,7 +54,7 @@ namespace WPFSurfacePlot3D
         private int defaultFunctionSampleSize = 100;
 
         // Brush presets
-        private readonly Brush BlueWhiteRedBrush = BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
+        private readonly Brush BlueWhiteRedBrush = BrushHelper.CreateGradientBrush(Colors.DarkBlue, Colors.LightBlue, Colors.White, Colors.Pink, Colors.Red);
         private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
         private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Color.FromRgb(20,20,20), Colors.White);
 
@@ -97,32 +98,35 @@ namespace WPFSurfacePlot3D
 
         public void PlotData(double[,] zData2DArray)
         {
-            int n = zData2DArray.GetLength(0);
-            int m = zData2DArray.GetLength(1);
-            Point3D[,] newDataArray = new Point3D[n, m];
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < m; j++)
-                {
-                    Point3D point = new Point3D(i, j, zData2DArray[i, j]);
-                    newDataArray[i, j] = point;
-                }
-            }
-            DataPoints = newDataArray;
-            CreateColorValues();
-            RequestUpdateVisual(true);
+            XAxisTicks = null;
+            YAxisTicks = null;
+
+            PlotData2Array(zData2DArray);
         }
 
         public void PlotData(double[,] zData2DArray, double xMinimum, double xMaximum, double yMinimum, double yMaximum)
         {
+            int n = zData2DArray.GetLength(0);
+            int m = zData2DArray.GetLength(1);
 
+
+            var xArray = CreateLinearlySpacedArray2(xMinimum, xMaximum, n);
+            var yArray = CreateLinearlySpacedArray2(yMinimum, yMaximum, m);
+            PlotData(zData2DArray, xArray, yArray);
         }
 
         public void PlotData(double[,] zData2DArray, double[] xArray, double[] yArray)
         {
-            // Note - check that dimensions match!!
+            int n = zData2DArray.GetLength(0);
+            int m = zData2DArray.GetLength(1);
 
+            if (n != xArray.Length) throw new Exception("SurfacePlotModel: PlotData() zData2DArray size x not equal to xArray size");
+            if (m != yArray.Length) throw new Exception("SurfacePlotModel: PlotData() zData2DArray size y not equal to yArray size");
 
+            XAxisTicks = xArray;
+            YAxisTicks = yArray;
+
+            PlotData2Array(zData2DArray);
         }
 
         public void PlotData(Point3D[,] point3DArray)
@@ -171,9 +175,40 @@ namespace WPFSurfacePlot3D
             RequestUpdateVisual(true);
         }
 
+
+        public static double[] CreateLinearlySpacedArray2(double minValue, double maxValue, int numberOfPoints)
+        {
+            double[] array = new double[numberOfPoints];
+            double intervalSize = (maxValue - minValue) / (numberOfPoints);
+            for (int i = 0; i < numberOfPoints; i++)
+            {
+                array[i] = minValue + i * intervalSize;
+            }
+            return array;
+        }
+
         #endregion
 
         #region === Private Methods ===
+
+
+        private void PlotData2Array(double[,] zData2DArray)
+        {
+            int n = zData2DArray.GetLength(0);
+            int m = zData2DArray.GetLength(1);
+            Point3D[,] newDataArray = new Point3D[n, m];
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    Point3D point = new Point3D(i, j, zData2DArray[i, j]);
+                    newDataArray[i, j] = point;
+                }
+            }
+            DataPoints = newDataArray;
+            CreateColorValues();
+            RequestUpdateVisual(true);
+        }
 
         private Point3D[,] CreateDataArrayFromFunction(Func<double, double, double> f, double[] xArray, double[] yArray)
         {
@@ -400,10 +435,10 @@ namespace WPFSurfacePlot3D
         public double[] XAxisTicks
         {
             get { return xAxisTicks; }
-            set
+            private set
             {
                 xAxisTicks = value;
-                RequestUpdateVisual();
+                //RequestUpdateVisual();
             }
         }
 
@@ -413,10 +448,10 @@ namespace WPFSurfacePlot3D
         public double[] YAxisTicks
         {
             get { return yAxisTicks; }
-            set
+            private set
             {
                 yAxisTicks = value;
-                RequestUpdateVisual();
+                //RequestUpdateVisual();
             }
         }
 
@@ -424,10 +459,10 @@ namespace WPFSurfacePlot3D
         public double[] ZAxisTicks
         {
             get { return zAxisTicks; }
-            set
+            private set
             {
                 zAxisTicks = value;
-                RequestUpdateVisual();
+                //RequestUpdateVisual();
             }
         }
 

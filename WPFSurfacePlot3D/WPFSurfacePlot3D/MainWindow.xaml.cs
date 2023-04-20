@@ -32,7 +32,7 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Used to control which demo function the user has chosen to display.
         /// </summary>
-        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, BigDataPlot };
+        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, DataPlot2, BigDataPlot };
 
 
 
@@ -63,6 +63,11 @@ namespace WPFSurfacePlot3D
             {
                 currentOption = (FunctionOptions)functionSelectorComboBox.SelectedItem;
             }
+
+            int sizeX = 10;
+            int sizeY = 20;
+            double r = sizeX / 2;
+            double s = sizeY / 2;
 
             switch (currentOption)
             {
@@ -97,34 +102,58 @@ namespace WPFSurfacePlot3D
                     break;
 
                 case FunctionOptions.DataPlot:
-                    const int sizeX = 10;
-                    const int sizeY = 20;
+                    sizeX = 10;
+                    sizeY = 20;
+                    r = sizeX / 2;
+                    s = sizeY / 2;
                     double[,] arrayOfPoints = new double[sizeX, sizeY];
                     for (int i = 0; i < sizeX; i++)
                     {
                         for (int j = 0; j < sizeY; j++)
                         {
-                            arrayOfPoints[i, j] = 10 * Math.Sin(Math.Sqrt(i * i + j * j)) / Math.Sqrt(i * i + j * j + 0.0001);
+                            arrayOfPoints[i, j] = 10 * Math.Sin(Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s)) * 0.7) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
                         }
                     }
                     //arrayOfPoints[5,5] = double.NaN;
                     viewModel.PlotData(arrayOfPoints);
                     break;
 
-                case FunctionOptions.BigDataPlot:
-                    const int sizeX1 = 201;
-                    const int sizeY1 = 301;
-                    double r = sizeX1 / 2;
-                    double s = sizeY1 / 2;
-                    double[,] arrayOfPoints1 = new double[sizeX1, sizeY1];
-                    for (int i = 0; i < sizeX1; i++)
+                case FunctionOptions.DataPlot2:
+                    sizeX = 10;
+                    sizeY = 20;
+                    r = sizeX / 2;
+                    s = sizeY / 2;
+                    double[,] arrayOfPoints1 = new double[sizeX, sizeY];
+                    for (int i = 0; i < sizeX; i++)
                     {
-                        for (int j = 0; j < sizeY1; j++)
+                        for (int j = 0; j < sizeY; j++)
                         {
-                            arrayOfPoints1[i, j] = 1000 * Math.Sin(Math.Sqrt((i - r) * (i - r) + (j-s) * (j - s)) * 0.1) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
+                            arrayOfPoints1[i, j] = 10 * Math.Sin(Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s)) * 0.7) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
                         }
                     }
-                    viewModel.PlotData(arrayOfPoints1);
+
+                    var xArray = SurfacePlotModel.CreateLinearlySpacedArray2(0, (sizeX) * 10, sizeX);
+                    var yArray = SurfacePlotModel.CreateLinearlySpacedArray2(0, (sizeY) * 10, sizeY);
+
+
+                    //arrayOfPoints[5,5] = double.NaN;
+                    viewModel.PlotData(arrayOfPoints1, xArray, yArray);
+                    break;
+
+                case FunctionOptions.BigDataPlot:
+                    sizeX = 201;
+                    sizeY = 301;
+                    r = sizeX / 2;
+                    s = sizeY / 2;
+                    double[,] arrayOfPoints2 = new double[sizeX, sizeY];
+                    for (int i = 0; i < sizeX; i++)
+                    {
+                        for (int j = 0; j < sizeY; j++)
+                        {
+                            arrayOfPoints2[i, j] = 1000 * Math.Sin(Math.Sqrt((i - r) * (i - 1) + (j-s) * (j - 1)) * 0.1) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
+                        }
+                    }
+                    viewModel.PlotData(arrayOfPoints2);
                     break;
 
                 default:
