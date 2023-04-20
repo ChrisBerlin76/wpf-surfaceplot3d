@@ -333,7 +333,7 @@ namespace WPFSurfacePlot3D
             List<double> yValues = new List<double>();
             List<double> zValues = new List<double>();
 
-
+            double px, py;
 
             if (XAxisTicks!=null && XAxisTicks.Length>1)
             {
@@ -345,6 +345,19 @@ namespace WPFSurfacePlot3D
                 for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
                 {
                     xValues.Add(x);
+                }
+            }
+
+            if (YAxisTicks != null && YAxisTicks.Length > 1)
+            {
+                yValues = YAxisTicks.ToList();
+            }
+            else
+            {
+                // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
+                for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
+                {
+                    yValues.Add(y);
                 }
             }
 
@@ -360,7 +373,16 @@ namespace WPFSurfacePlot3D
                     double i = (x - minX) / (maxX - minX) * (numberOfRows - 1);
                     for (int j = 0; j < numberOfColumns; j++)
                     {
-                        surfacePath.Add(DoBilinearInterpolation(datapoints, i, j));
+                        if (YAxisTicks != null && YAxisTicks.Length == numberOfColumns) 
+                        {
+                            px = xs;
+                            py = YAxisTicks[j];
+                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                        }
+                        else
+                        {
+                            surfacePath.Add(DoBilinearInterpolation2(datapoints, i,j));
+                        }
                     }
                     surfaceMeshLinesBuilder.AddTube(surfacePath, lineThickness, 9, false);
                 }
@@ -385,19 +407,6 @@ namespace WPFSurfacePlot3D
                 }
             }
 
-            if (YAxisTicks != null && YAxisTicks.Length > 1)
-            {
-                yValues = YAxisTicks.ToList();
-            }
-            else
-            {
-                // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
-                for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
-                {
-                    yValues.Add(y);
-                }
-            }
-
 
             foreach (double y in yValues)
             {
@@ -408,7 +417,16 @@ namespace WPFSurfacePlot3D
                     double j = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
                     for (int i = 0; i < numberOfRows; i++)
                     {
-                        surfacePath.Add(DoBilinearInterpolation(datapoints, i, j));
+                        if (XAxisTicks != null && XAxisTicks.Length == numberOfRows)
+                        {
+                            px = XAxisTicks[i] * stretchX;
+                            py = y;
+                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                        }
+                        else
+                        {
+                            surfacePath.Add(DoBilinearInterpolation2(datapoints, i, j));
+                        } 
                     }
                     surfaceMeshLinesBuilder.AddTube(surfacePath, lineThickness, 9, false);
                 }
@@ -529,7 +547,72 @@ namespace WPFSurfacePlot3D
         /// <param name="i">First index: i.e., points[i, j]</param>
         /// <param name="j">Second index: i.e., points[i, j]</param>
         /// <returns></returns>
-        private static Point3D DoBilinearInterpolation(Point3D[,] points, double i, double j)
+        private static Point3D DoBilinearInterpolation(Point3D[,] points, double x, double y)
+        {
+            int n = points.GetUpperBound(0);
+            int m = points.GetUpperBound(1);
+            int x0 = n;
+            int y0 = m;
+            double xu = 0;
+            double yu = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                var p0 = points[i, 0];
+                var p1 = points[i + 1, 0];
+                if (p1.X > x)
+                {
+                    x0 = i;
+                    xu = (x - p0.X) / (p1.X - p0.X);
+                    break;
+                }
+            }
+
+            for (int i = 0; i < m; i++)
+            {
+                var p0 = points[0, i];
+                var p1 = points[0, i + 1];
+                if (p1.Y > y)
+                {
+                    y0 = i;
+                    yu = (y - p0.Y) / (p1.Y - p0.Y);
+                    break;
+                }
+            }
+
+            if (x0 >= n)
+            {
+                x0 = n - 1;
+                xu = 1;
+            }
+            if (y0 >= m)
+            {
+                y0 = m - 1;
+                yu = 1;
+            }
+
+            if (xu < 0) xu = 0;
+            if (yu < 0) yu = 0;
+
+            Vector3D v00 = points[x0, y0].ToVector3D();
+            Vector3D v01 = points[x0, y0 + 1].ToVector3D();
+            Vector3D v10 = points[x0 + 1, y0].ToVector3D();
+            Vector3D v11 = points[x0 + 1, y0 + 1].ToVector3D();
+            Vector3D v0 = v00 * (1 - xu) + v10 * xu;
+            Vector3D v1 = v01 * (1 - xu) + v11 * xu;
+            return (v0 * (1 - yu) + v1 * yu).ToPoint3D();
+        }
+
+
+
+        // <summary>
+        /// The bilinear interpolation method calculates a weighted "average" between four points on a discrete grid, allowing us to build a "smooth" path between consecutive points along a grid.
+        /// </summary>
+        /// <param name="points">Points array - containing the data to be interpolated</param>
+        /// <param name="i">First index: i.e., points[i, j]</param>
+        /// <param name="j">Second index: i.e., points[i, j]</param>
+        /// <returns></returns>
+        private static Point3D DoBilinearInterpolation2(Point3D[,] points, double i, double j)
         {
             int n = points.GetUpperBound(0);
             int m = points.GetUpperBound(1);
@@ -550,6 +633,7 @@ namespace WPFSurfacePlot3D
             Vector3D v1 = v01 * (1 - u) + v11 * u;
             return (v0 * (1 - v) + v1 * v).ToPoint3D();
         }
+
 
 
         /// <summary>

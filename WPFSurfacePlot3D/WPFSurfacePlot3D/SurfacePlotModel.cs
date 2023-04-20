@@ -167,6 +167,9 @@ namespace WPFSurfacePlot3D
             _yMin = yMinimum;
             _yMax = yMaximum;
 
+            XAxisTicks = null;
+            YAxisTicks = null;
+
             double[] xArray = CreateLinearlySpacedArray(xMinimum, xMaximum, xSampleSize);
             double[] yArray = CreateLinearlySpacedArray(yMinimum, yMaximum, ySampleSize);
 
