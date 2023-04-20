@@ -97,6 +97,12 @@ namespace WPFSurfacePlot3D
 
         #region === Public Methods ===
 
+        public void LoadDemo()
+        {
+            Func<double, double, double> function = (x, y) => 10 * Math.Sin(Math.Sqrt(x * x + y * y)) / Math.Sqrt(x * x + y * y);
+            PlotFunction(function, -10, 10);
+            ShowOrthographic = true;
+        }
 
         public void PlotData(double[,] zData2DArray)
         {

@@ -105,7 +105,7 @@ namespace WPFSurfacePlot3D
 
         //public static readonly DependencyProperty ShowOrthographicProperty = DependencyProperty.Register("ShowOrthographic", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
 
-        public void ZoomToExtents()
+        public void ZoomToExtents(double animationTime = 400)
         {
             // FieldOfView resp. NearPlaneDistance are set to default again
             // because sometimes these values change to unreasonable values
@@ -119,7 +119,7 @@ namespace WPFSurfacePlot3D
                 ocam.NearPlaneDistance = -10000000;
             }
 
-            hViewport.ZoomExtents(400);
+            hViewport.ZoomExtents(animationTime);
         }
 
 
@@ -144,6 +144,8 @@ namespace WPFSurfacePlot3D
                 _model = model;
                 _model.ZoomToContentRequested += _model_ZoomToContentRequested;
             }
+
+            ZoomToExtents(0);
         }
 
         private void _model_ZoomToContentRequested(object sender, System.EventArgs e)
