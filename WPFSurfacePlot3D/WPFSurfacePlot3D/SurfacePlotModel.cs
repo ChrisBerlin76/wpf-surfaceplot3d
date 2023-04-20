@@ -491,17 +491,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        private bool showContourLines;
-        public bool ShowContourLines
-        {
-            get { return showContourLines; }
-            set
-            {
-                showContourLines = value;
-                RaisePropertyChanged(nameof(ShowContourLines));
-                RequestUpdateVisual();
-            }
-        }
+        //private bool showContourLines;
+        //public bool ShowContourLines
+        //{
+        //    get { return showContourLines; }
+        //    set
+        //    {
+        //        showContourLines = value;
+        //        RaisePropertyChanged(nameof(ShowContourLines));
+        //        RequestUpdateVisual();
+        //    }
+        //}
 
         private bool showGrid;
         public bool ShowGrid
@@ -524,6 +524,17 @@ namespace WPFSurfacePlot3D
                 showAxes = value;
                 RaisePropertyChanged(nameof(ShowAxes));
                 RequestUpdateVisual();
+            }
+        }
+
+        private bool showColorScale;
+        public bool ShowColorScale
+        {
+            get { return showColorScale; }
+            set
+            {
+                showColorScale = value;
+                RaisePropertyChanged(nameof(ShowColorScale));
             }
         }
 

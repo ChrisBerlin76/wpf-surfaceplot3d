@@ -212,8 +212,7 @@ namespace WPFSurfacePlot3D
             double minZ = double.MaxValue;
             double maxZ = double.MinValue;
 
-            double minColorValue = double.MaxValue;
-            double maxColorValue = double.MinValue;
+
 
             for (int i = 0; i < numberOfRows; i++)
             {
@@ -228,17 +227,16 @@ namespace WPFSurfacePlot3D
                     minX = Math.Min(minX, x);
                     minY = Math.Min(minY, y);
                     minZ = Math.Min(minZ, z);
-                    if (ColorValues != null && numberOfRows <= ColorValues.GetLength(0) && numberOfColumns <= ColorValues.GetLength(1))
-                    {
-                        maxColorValue = Math.Max(maxColorValue, ColorValues[i, j]);
-                        minColorValue = Math.Min(minColorValue, ColorValues[i, j]);
-                    }
                 }
             }
+
+
+            GetMinMaxColorValues(ColorValues, out double minColorValue, out double maxColorValue);
 
             //double maxDiff = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
             //double minDiff = Math.Min(Math.Min(maxX - minX, maxY - minY), maxZ - minZ);
             double factorYX = (maxY - minY) / (maxX - minX);
+            double factorZX = (maxZ - minZ) / (maxX - minX);
             double maxDiff = Math.Max(maxX - minX, maxY - minY);
             double minDiff = Math.Min(maxX - minX, maxY - minY);
             axesOffset = maxDiff * 0.04;
@@ -281,13 +279,13 @@ namespace WPFSurfacePlot3D
 
             // Optional: Stretch X coordinate to get equal Size as Y
             double stretchX = 1;
+            double stretchZ = 1;
 
-            if (ShowXyIsometric)
-            {
-                stretchX = factorYX;
-            }
+            if (ShowXyIsometric) stretchX = factorYX;
+            if (ShowXzIsometric) stretchZ = 1 / factorZX;
 
-            if(stretchX != 1)
+
+            if(stretchX != 1 || stretchZ!=1)
             {
                 datapoints = new Point3D[numberOfRows, numberOfColumns];
                 for (int i = 0; i < numberOfRows; i++)
@@ -296,10 +294,17 @@ namespace WPFSurfacePlot3D
                     {
                         var p = DataPoints[i, j];
                         p.X = p.X * stretchX;
+                        p.Z = p.Z * stretchZ;
                         datapoints[i, j] = p;
                     }
                 }
             }
+
+            double maxXs = maxX * stretchX;
+            double minXs = minX * stretchX;
+            double maxZs = maxZ * stretchZ;
+            double minZs = minZ * stretchZ;
+            double ZAxisIntervalS = ZAxisInterval * stretchZ;
 
             bool showSurfaceMesh = _model!=null ? _model.ShowSurfaceMesh : true;
             bool showGrid = _model!=null ? _model.ShowGrid : true;
@@ -323,6 +328,8 @@ namespace WPFSurfacePlot3D
             // Loop through x intervals - for the surface meshlines, the grid, and X axes ticks
             for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
             {
+                double xs = x * stretchX;
+                
                 // Add surface mesh lines which denote intervals along the x-axis
                 if (showSurfaceMesh)
                 {
@@ -340,7 +347,7 @@ namespace WPFSurfacePlot3D
                 {
                     BillboardTextVisual3D label = new BillboardTextVisual3D();
                     label.Text = string.Format("{0:F2}", x);
-                    label.Position = new Point3D(x * stretchX, minY - axesOffset, minZ - axesOffset);
+                    label.Position = new Point3D(xs, minY - axesOffset, minZs - axesOffset);
                     axesLabelsModel.Children.Add(label);
                 }
 
@@ -348,9 +355,9 @@ namespace WPFSurfacePlot3D
                 if (showGrid)
                 {
                     var gridPath = new List<Point3D>();
-                    gridPath.Add(new Point3D(x * stretchX, minY, minZ));
-                    gridPath.Add(new Point3D(x * stretchX, maxY, minZ));
-                    gridPath.Add(new Point3D(x * stretchX, maxY, maxZ));
+                    gridPath.Add(new Point3D(xs, minY, minZs));
+                    gridPath.Add(new Point3D(xs, maxY, minZs));
+                    gridPath.Add(new Point3D(xs, maxY, maxZs));
                     gridBuilder.AddTube(gridPath, lineThickness, 9, false);
                 }
             }
@@ -358,8 +365,10 @@ namespace WPFSurfacePlot3D
             // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
             for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
             {
+
+
                 // Add surface mesh lines which denote intervals along the y-axis
-                if(showSurfaceMesh)
+                if (showSurfaceMesh)
                 {
                     var surfacePath = new List<Point3D>();
                     double j = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
@@ -375,7 +384,7 @@ namespace WPFSurfacePlot3D
                 {
                     BillboardTextVisual3D label = new BillboardTextVisual3D();
                     label.Text = string.Format("{0:F2}", y);
-                    label.Position = new Point3D(minX * stretchX - axesOffset, y, minZ - axesOffset);
+                    label.Position = new Point3D(minXs - axesOffset, y, minZs - axesOffset);
                     axesLabelsModel.Children.Add(label);
                 }
 
@@ -383,9 +392,9 @@ namespace WPFSurfacePlot3D
                 if (showGrid)
                 {
                     var gridPath = new List<Point3D>();
-                    gridPath.Add(new Point3D(minX * stretchX, y, minZ));
-                    gridPath.Add(new Point3D(maxX * stretchX, y, minZ));
-                    gridPath.Add(new Point3D(maxX * stretchX, y, maxZ));
+                    gridPath.Add(new Point3D(minXs, y, minZs));
+                    gridPath.Add(new Point3D(maxXs, y, minZs));
+                    gridPath.Add(new Point3D(maxXs, y, maxZs));
                     gridBuilder.AddTube(gridPath, lineThickness, 9, false);
                 }
             }
@@ -393,13 +402,15 @@ namespace WPFSurfacePlot3D
             // Loop through z intervals - for the grid, and Z axes ticks
             for (double z = minZ; z <= maxZ + 0.0001; z += ZAxisInterval)
             {
+                double zs = z * stretchZ;
+
                 // Grid lines
                 if (showGrid)
                 {
                     var path = new List<Point3D>();
-                    path.Add(new Point3D(minX * stretchX, maxY, z));
-                    path.Add(new Point3D(maxX * stretchX, maxY, z));
-                    path.Add(new Point3D(maxX * stretchX, minY, z));
+                    path.Add(new Point3D(minXs, maxY, zs));
+                    path.Add(new Point3D(maxXs, maxY, zs));
+                    path.Add(new Point3D(maxXs, minY, zs));
                     gridBuilder.AddTube(path, lineThickness, 9, false);
                 }
 
@@ -409,7 +420,7 @@ namespace WPFSurfacePlot3D
                 {
                     BillboardTextVisual3D label = new BillboardTextVisual3D();
                     label.Text = string.Format("{0:F2}", z);
-                    label.Position = new Point3D(minX * stretchX - axesOffset, maxY + axesOffset, z);
+                    label.Position = new Point3D(minXs - axesOffset, maxY + axesOffset, zs);
                     axesLabelsModel.Children.Add(label);
                 }
             }
@@ -419,15 +430,15 @@ namespace WPFSurfacePlot3D
             {
                 BillboardTextVisual3D xLabel = new BillboardTextVisual3D();
                 xLabel.Text = _model?.XAxisLabel ?? "X";
-                xLabel.Position = new Point3D((maxX + minX) * stretchX / 2, minY - 2.5 * axesOffset, minZ - 2.5 * axesOffset);
+                xLabel.Position = new Point3D((maxX + minX) * stretchX / 2, minY - 2.5 * axesOffset, minZs - 2.5 * axesOffset);
                 axesLabelsModel.Children.Add(xLabel);
                 BillboardTextVisual3D yLabel = new BillboardTextVisual3D();
                 yLabel.Text = _model?.YAxisLabel ?? "Y";
-                yLabel.Position = new Point3D(minX * stretchX - 2.5 * axesOffset, (maxY + minY) / 2, minZ - 2.5 * axesOffset);
+                yLabel.Position = new Point3D(minXs - 2.5 * axesOffset, (maxY + minY) / 2, minZs - 2.5 * axesOffset);
                 axesLabelsModel.Children.Add(yLabel);
                 BillboardTextVisual3D zLabel = new BillboardTextVisual3D();
                 zLabel.Text = _model?.ZAxisLabel ?? "Z";
-                zLabel.Position = new Point3D(minX * stretchX - 2.5 * axesOffset, maxY + 2.5 * axesOffset, (maxZ + minZ) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
+                zLabel.Position = new Point3D(minXs - 2.5 * axesOffset, maxY + 2.5 * axesOffset, (maxZs + minZs) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
                 axesLabelsModel.Children.Add(zLabel);
             }
 
@@ -446,7 +457,32 @@ namespace WPFSurfacePlot3D
 
             return newModelGroup;
         }
-        
+
+        private void GetMinMaxColorValues(double[,] colorValues, out double minColorValue, out double maxColorValue)
+        {
+            minColorValue = double.MaxValue;
+            maxColorValue = double.MinValue;
+
+            if (colorValues == null) return;
+
+            int numberOfRows = colorValues.GetLength(0);
+            int numberOfColumns = colorValues.GetLength(1);
+
+            minColorValue = double.MaxValue;
+            maxColorValue = double.MinValue;
+
+            for (int i = 0; i < numberOfRows; i++)
+            {
+                for (int j = 0; j < numberOfColumns; j++)
+                {
+                    var v = ColorValues[i, j];
+                    if (double.IsNaN(v) || double.IsInfinity(v)) continue;
+                    maxColorValue = Math.Max(maxColorValue, v);
+                    minColorValue = Math.Min(minColorValue, v);
+                }
+            }
+        }
+
         // <summary>
         /// The bilinear interpolation method calculates a weighted "average" between four points on a discrete grid, allowing us to build a "smooth" path between consecutive points along a grid.
         /// </summary>

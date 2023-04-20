@@ -59,5 +59,21 @@
                 />-->
 
         </h:HelixViewport3D>
+
+        <Grid Grid.Row="1">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowColorScale}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <ProgressBar Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Top" 
+                     Margin="10" Height="200" Width="20" Background="{Binding CurrentSurfaceBrush}"/>
+        </Grid>
+
     </Grid>
 </UserControl>

@@ -107,6 +107,7 @@ namespace WPFSurfacePlot3D
                             arrayOfPoints[i, j] = 10 * Math.Sin(Math.Sqrt(i * i + j * j)) / Math.Sqrt(i * i + j * j + 0.0001);
                         }
                     }
+                    //arrayOfPoints[5,5] = double.NaN;
                     viewModel.PlotData(arrayOfPoints);
                     break;
 
