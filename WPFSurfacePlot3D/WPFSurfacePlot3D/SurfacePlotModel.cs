@@ -3,6 +3,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using Xceed.Wpf.Toolkit.PropertyGrid.Editors;
@@ -59,7 +60,7 @@ namespace WPFSurfacePlot3D
         private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
         private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Color.FromRgb(20,20,20), Colors.White);
 
-        private double _xMax, _xMin, _yMax, _yMin;
+        private double _xMax, _xMin, _yMax, _yMin, _zMax, _zMin;
 
 
         // So the overall goal of this section is to output the appropriate values to SurfacePlotVisual3D - namely,
@@ -257,6 +258,41 @@ namespace WPFSurfacePlot3D
                     ColorValues = null;
                     break;
             }
+
+
+
+            // ZMax / ZCenter / ZMin bestimmen
+
+            if (ColorValues == null) return;
+
+            int n = ColorValues.GetLength(0);
+            int m = ColorValues.GetLength(1);
+            double zMax = double.MinValue; 
+            double zMin = double.MaxValue;
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    var v = ColorValues[i, j];
+                    if (double.IsNaN(v) || double.IsInfinity(v)) continue;
+                    if(v > zMax) zMax = v;
+                    if(v < zMin) zMin = v;
+                }
+            }
+
+            double zCenter = (zMax + zMin) / 2;
+            double zMaxC = (zCenter + zMax) / 2;
+            double zMinC = (zCenter + zMin) / 2;
+
+            //ZMax = string.Format("F2", zMax);
+            //ZCenter = string.Format("F2", zCenter);
+            //ZMin = string.Format("F2", zMin);
+
+            ZMax = $"{zMax:F2}";
+            ZCenter = $"{zCenter:F2}";
+            ZMin = $"{zMin:F2}";
+            ZMaxC = $"{zMaxC:F2}";
+            ZMinC = $"{zMinC:F2}";
         }
 
         private void RequestUpdateVisual(bool zoomToContent=false)
@@ -376,6 +412,65 @@ namespace WPFSurfacePlot3D
                 default: return BlackWhiteBrush;
             }
         }
+
+
+        private string zMax;
+        public string ZMax
+        {
+            get { return zMax; }
+            private set
+            {
+                zMax = value;
+                RaisePropertyChanged(nameof(ZMax));
+            }
+        }
+
+        private string zCenter;
+        public string ZCenter
+        {
+            get { return zCenter; }
+            private set
+            {
+                zCenter = value;
+                RaisePropertyChanged(nameof(ZCenter));
+            }
+        }
+
+        private string zMin;
+        public string ZMin
+        {
+            get { return zMin; }
+            private set
+            {
+                zMin = value;
+                RaisePropertyChanged(nameof(ZMin));
+            }
+        }
+
+
+        private string zMaxC;
+        public string ZMaxC
+        {
+            get { return zMaxC; }
+            private set
+            {
+                zMaxC = value;
+                RaisePropertyChanged(nameof(ZMaxC));
+            }
+        }
+
+        private string zMinC;
+        public string ZMinC
+        {
+            get { return zMinC; }
+            private set
+            {
+                zMinC = value;
+                RaisePropertyChanged(nameof(ZMinC));
+            }
+        }
+
+
 
         #endregion
 
@@ -697,10 +792,13 @@ namespace WPFSurfacePlot3D
             int m = data.GetLength(1);
             var K = new double[n, m];
             for (int i = 0; i < n; i++)
+            {
                 for (int j = 0; j < m; j++)
                 {
                     K[i, j] = data[i, j].Z;
                 }
+            }
+
             return K;
         }
     }
