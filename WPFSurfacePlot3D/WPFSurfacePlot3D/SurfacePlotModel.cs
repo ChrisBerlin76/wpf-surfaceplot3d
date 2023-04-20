@@ -547,7 +547,7 @@ namespace WPFSurfacePlot3D
             {
                 showOrthographic = value;
                 RaisePropertyChanged(nameof(ShowOrthographic));
-                // Only to HelixViewport3D, not to Visual3D
+                ZoomToContentRequested?.Invoke(this, EventArgs.Empty);
             }
         }
 
