@@ -15,19 +15,48 @@ namespace WPFSurfacePlot3D
         ByLights,
 
         /// <summary>
+        /// Color code by Z-value using a gradient brush with white ambient light
+        /// </summary>
+        ByValueZ,
+
+        /// <summary>
+        /// Color code by gradient in y-direction using a gradient brush with white ambient light
+        /// </summary>
+        ByGradientX,
+
+        /// <summary>
         /// Color code by gradient in y-direction using a gradient brush with white ambient light
         /// </summary>
         ByGradientY,
 
         /// <summary>
-        /// Color code by Z-value using a gradient brush with white ambient light
+        /// Color coding switched off
         /// </summary>
-        ByValueZ
+        NoColorCoding
     }
+
+    public enum BrushPreset
+    {
+        BlueWhiteRed,
+
+        GreenYellowRed,
+
+        BlackWhite,
+
+        Custom
+    }
+
+
 
     public class SurfacePlotModel : INotifyPropertyChanged
     {
         private int defaultFunctionSampleSize = 100;
+
+        // Brush presets
+        private readonly Brush BlueWhiteRedBrush = BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
+        private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
+        private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Colors.Black, Colors.White);
+
 
         // So the overall goal of this section is to output the appropriate values to SurfacePlotVisual3D - namely,
         // - DataPoints as Point3D, plus xAxisTicks (and y, z) as double[]
@@ -42,7 +71,9 @@ namespace WPFSurfacePlot3D
             YAxisLabel = "Y";
             ZAxisLabel = "Z";
 
-            
+
+            BrushPreset = BrushPreset.BlueWhiteRed;
+            CustomSurfaceBrush = BrushHelper.CreateGradientBrush(Colors.Violet, Colors.Red, Colors.LightGoldenrodYellow, Colors.ForestGreen, Colors.Lime);
             ShowGrid = true;
             ShowAxes = true;
             ShowSurfaceMesh = true;
@@ -177,10 +208,14 @@ namespace WPFSurfacePlot3D
                 case ColorCoding.ByValueZ:
                     ColorValues = GetZData(DataPoints);
                     break;
+                case ColorCoding.ByGradientX:
+                    ColorValues = FindGradientX(DataPoints);
+                    break;
                 case ColorCoding.ByGradientY:
                     ColorValues = FindGradientY(DataPoints);
                     break;
                 case ColorCoding.ByLights:
+                case ColorCoding.NoColorCoding:
                     ColorValues = null;
                     break;
             }
@@ -191,10 +226,9 @@ namespace WPFSurfacePlot3D
             if (SupressUpdates) return;
 
             RaisePropertyChanged(nameof(Lights));
-            RaisePropertyChanged(nameof(SurfaceBrush));
+            RaisePropertyChanged(nameof(CurrentSurfaceBrush));
             RaisePropertyChanged(nameof(DataPoints));
             RaisePropertyChanged(nameof(ColorValues));
-
 
             VisualUpdateRequested?.Invoke(this, EventArgs.Empty);
 
@@ -234,17 +268,6 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        //private Point3D[,] dataPoints;
-        //public Point3D[,] DataPoints
-        //{
-        //    get { return dataPoints; }
-        //    set
-        //    {
-        //        dataPoints = value;
-        //        //RaisePropertyChanged("DataPoints");   <-- Is updated by UpdatePropertyBindings()
-        //    }
-        //}
-
         public Point3D[,] DataPoints { get; private set; }
 
         public double[,] ColorValues { get; private set; }
@@ -259,9 +282,12 @@ namespace WPFSurfacePlot3D
                     case ColorCoding.ByValueZ:
                         group.Children.Add(new AmbientLight(Colors.White));
                         break;
+                    case ColorCoding.ByGradientX:
                     case ColorCoding.ByGradientY:
+                    case ColorCoding.NoColorCoding:
                         group.Children.Add(new AmbientLight(Colors.White));
                         break;
+                    
                     case ColorCoding.ByLights:
                         group.Children.Add(new AmbientLight(Colors.Gray));
                         group.Children.Add(new PointLight(Colors.Red, new Point3D(0, -1000, 0)));
@@ -273,7 +299,11 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        public Brush SurfaceBrush
+
+
+
+
+        public Brush CurrentSurfaceBrush
         {
             get
             {
@@ -283,13 +313,29 @@ namespace WPFSurfacePlot3D
                 switch (ColorCoding)
                 {
                     case ColorCoding.ByValueZ:
-                        return BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
+                        return GetBrush();
+                    case ColorCoding.ByGradientX:
                     case ColorCoding.ByGradientY:
-                        return BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
+                        return GetBrush();
                     case ColorCoding.ByLights:
                         return Brushes.White;
+                    case ColorCoding.NoColorCoding:
+                        return Brushes.Transparent;
                 }
                 return null;
+            }
+        }
+
+
+        private Brush GetBrush()
+        {
+            switch (BrushPreset)
+            {
+                case BrushPreset.BlueWhiteRed: return BlueWhiteRedBrush;
+                case BrushPreset.GreenYellowRed: return GreenYellowRedBrush;
+                case BrushPreset.BlackWhite: return BlackWhiteBrush;
+                case BrushPreset.Custom: return CustomSurfaceBrush ?? BlackWhiteBrush;
+                default: return BlackWhiteBrush;
             }
         }
 
@@ -308,6 +354,20 @@ namespace WPFSurfacePlot3D
             }
         }
 
+
+        public BrushPreset brushPreset;
+        public BrushPreset BrushPreset
+        {
+            get { return brushPreset; }
+            set
+            {
+                brushPreset = value;
+                RaisePropertyChanged(nameof(BrushPreset));
+                RequestUpdateVisual();
+            }
+        }
+
+
         public ColorCoding colorCoding;
         public ColorCoding ColorCoding
         {
@@ -317,6 +377,21 @@ namespace WPFSurfacePlot3D
                 colorCoding = value;
                 RaisePropertyChanged(nameof(ColorCoding));
                 CreateColorValues();
+                RequestUpdateVisual();
+            }
+        }
+
+
+        public Brush customSurfaceBrush;
+
+        public Brush CustomSurfaceBrush
+        {
+            get { return customSurfaceBrush; }
+            set
+            {
+                customSurfaceBrush = value;
+                RaisePropertyChanged(nameof(CustomSurfaceBrush));
+                //CreateColorValues();
                 RequestUpdateVisual();
             }
         }
@@ -416,17 +491,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        private bool showContourLines;
-        public bool ShowContourLines
-        {
-            get { return showContourLines; }
-            set
-            {
-                showContourLines = value;
-                RaisePropertyChanged(nameof(ShowContourLines));
-                RequestUpdateVisual();
-            }
-        }
+        //private bool showContourLines;
+        //public bool ShowContourLines
+        //{
+        //    get { return showContourLines; }
+        //    set
+        //    {
+        //        showContourLines = value;
+        //        RaisePropertyChanged(nameof(ShowContourLines));
+        //        RequestUpdateVisual();
+        //    }
+        //}
 
         private bool showGrid;
         public bool ShowGrid
@@ -525,6 +600,26 @@ namespace WPFSurfacePlot3D
 
 
         // http://en.wikipedia.org/wiki/Numerical_differentiation
+        private double[,] FindGradientX(Point3D[,] data)
+        {
+            int n = data.GetLength(0);
+            int m = data.GetLength(1);
+            var K = new double[n, m];
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < m; j++)
+                {
+                    // Finite difference approximation
+                    var p10 = data[(i + 1 < n ? i + 1 : i), (j - 1 > 0 ? j - 1 : j)];
+                    var p00 = data[(i - 1 > 0 ? i - 1 : i), (j - 1 > 0 ? j - 1 : j)];
+
+                    double dx = p10.X - p00.X;
+                    double dz = p10.Z - p00.Z;
+
+                    K[i, j] = dz / dx;
+                }
+            return K;
+        }
+
         private double[,] FindGradientY(Point3D[,] data)
         {
             int n = data.GetLength(0);
@@ -534,14 +629,8 @@ namespace WPFSurfacePlot3D
                 for (int j = 0; j < m; j++)
                 {
                     // Finite difference approximation
-                    var p10 = data[i + 1 < n ? i + 1 : i, j - 1 > 0 ? j - 1 : j];
-                    var p00 = data[i - 1 > 0 ? i - 1 : i, j - 1 > 0 ? j - 1 : j];
-                    //var p11 = data[i + 1 < n ? i + 1 : i, j + 1 < m ? j + 1 : j];
-                    //var p01 = data[i - 1 > 0 ? i - 1 : i, j + 1 < m ? j + 1 : j];
-
-                    //double dx = p01.X - p00.X;
-                    //double dz = p01.Z - p00.Z;
-                    //double Fx = dz / dx;
+                    var p10 = data[(i - 1 > 0 ? i - 1 : i), (j + 1 < n ? j + 1 : j)];
+                    var p00 = data[(i - 1 > 0 ? i - 1 : i), (j - 1 > 0 ? j - 1 : j)];
 
                     double dy = p10.Y - p00.Y;
                     double dz = p10.Z - p00.Z;

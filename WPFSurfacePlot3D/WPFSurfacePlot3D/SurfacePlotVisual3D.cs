@@ -110,7 +110,7 @@ namespace WPFSurfacePlot3D
             set { SetValue(SurfaceBrushProperty, value); }
         }
 
-        public static readonly DependencyProperty SurfaceBrushProperty = DependencyProperty.Register("SurfaceBrush", typeof(Brush), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
+        public static readonly DependencyProperty SurfaceBrushProperty = DependencyProperty.Register(nameof(SurfaceBrush), typeof(Brush), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
 
 
 
@@ -189,7 +189,7 @@ namespace WPFSurfacePlot3D
             {
                 DataPoints = _model.DataPoints;
                 ColorValues = _model.ColorValues;
-                SurfaceBrush= _model.SurfaceBrush;
+                SurfaceBrush= _model.CurrentSurfaceBrush;
                 ShowXyIsometric = _model.ShowXyIsometric;
                 ShowXzIsometric = _model.ShowXzIsometric;
             }

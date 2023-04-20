@@ -32,7 +32,7 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Used to control which demo function the user has chosen to display.
         /// </summary>
-        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot };
+        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, BigDataPlot };
 
 
 
@@ -108,6 +108,22 @@ namespace WPFSurfacePlot3D
                         }
                     }
                     viewModel.PlotData(arrayOfPoints);
+                    break;
+
+                case FunctionOptions.BigDataPlot:
+                    const int sizeX1 = 200;
+                    const int sizeY1 = 300;
+                    double r = sizeX1 / 2;
+                    double s = sizeY1 / 2;
+                    double[,] arrayOfPoints1 = new double[sizeX1, sizeY1];
+                    for (int i = 0; i < sizeX1; i++)
+                    {
+                        for (int j = 0; j < sizeY1; j++)
+                        {
+                            arrayOfPoints1[i, j] = 1000 * Math.Sin(Math.Sqrt((i - r) * (i - r) + (j-s) * (j - s)) * 0.1) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
+                        }
+                    }
+                    viewModel.PlotData(arrayOfPoints1);
                     break;
 
                 default:
