@@ -24,11 +24,12 @@
         <h:HelixViewport3D 
             x:Name="hViewport" 
             Grid.Row="1" 
+            DataContextChanged="hViewport_DataContextChanged"
             ZoomExtentsWhenLoaded="True" 
             PanGesture="RightClick" 
             RotateGesture="LeftClick"
             ShowViewCube="False"
-            Orthographic="{Binding Orthographic, UpdateSourceTrigger=PropertyChanged}"
+            Orthographic="{Binding ShowOrthographic, UpdateSourceTrigger=PropertyChanged}"
             MouseDoubleClick="hViewport_MouseDoubleClick"
             ShowCoordinateSystem="{Binding ShowMiniCoordinates, UpdateSourceTrigger=PropertyChanged}" 
             CoordinateSystemLabelX="{Binding XAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
@@ -50,12 +51,12 @@
             <ModelVisual3D Content="{Binding Lights, UpdateSourceTrigger=PropertyChanged}"/>
 
             <!-- The plot visual (surface, axes and labels) -->
-            <local:SurfacePlotVisual3D 
-                DataPoints="{Binding DataPoints, UpdateSourceTrigger=PropertyChanged}" 
+            <local:SurfacePlotVisual3D x:Name="surfacePlotVisual3D"/>
+            <!--DataPoints="{Binding DataPoints, UpdateSourceTrigger=PropertyChanged}" 
                 ColorValues="{Binding ColorValues, UpdateSourceTrigger=PropertyChanged}" 
-                XYEqualLength="{Binding XYEqualLength, UpdateSourceTrigger=PropertyChanged}" 
+                ShowXyIsometric="{Binding ShowXyIsometric, UpdateSourceTrigger=PropertyChanged}" 
                 SurfaceBrush="{Binding SurfaceBrush, UpdateSourceTrigger=PropertyChanged}" 
-                />
+                />-->
 
         </h:HelixViewport3D>
     </Grid>

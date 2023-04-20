@@ -1,7 +1,9 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 
 namespace WPFSurfacePlot3D
 {
@@ -10,13 +12,25 @@ namespace WPFSurfacePlot3D
     /// </summary>
     public partial class SurfacePlotView : UserControl
     {
+        private SurfacePlotModel _model;
+
+        private DispatcherTimer _zoomExtentsTimer;
+
         public SurfacePlotView()
         {
             InitializeComponent();
             DataContext = LayoutRoot.DataContext;
-            //hViewport.ZoomExtentsGesture = new KeyGesture(Key.Space);
+            
+            hViewport.ZoomExtentsGesture = new KeyGesture(Key.Space);
             hViewport.TopViewGesture = new KeyGesture(Key.Space);
+
+
+            _zoomExtentsTimer = new DispatcherTimer();
+            _zoomExtentsTimer.Interval = TimeSpan.FromMilliseconds(200);
+            _zoomExtentsTimer.Tick += _zoomExtentsTimer_Tick;
         }
+
+
 
         public Point3D[,] DataPoints
         {
@@ -82,18 +96,66 @@ namespace WPFSurfacePlot3D
 
         public static readonly DependencyProperty ShowMiniCoordinatesProperty = DependencyProperty.Register("ShowMiniCoordinates", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
 
-        public bool Orthographic
-        {
-            get { return (bool)GetValue(OrthographicProperty); }
-            set { SetValue(OrthographicProperty, value); }
-        }
+        //public bool ShowOrthographic
+        //{
+        //    get { return (bool)GetValue(ShowOrthographicProperty); }
+        //    set { SetValue(ShowOrthographicProperty, value); }
+        //}
 
-        public static readonly DependencyProperty OrthographicProperty = DependencyProperty.Register("Orthographic", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
+        //public static readonly DependencyProperty ShowOrthographicProperty = DependencyProperty.Register("ShowOrthographic", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
+
+        public void ZoomToExtents()
+        {
+            // FieldOfView resp. NearPlaneDistance are set to default again
+            // because sometimes these values change to unreasonable values
+            if (hViewport.Camera is PerspectiveCamera cam)
+            {
+                cam.FieldOfView = 30;
+            }
+
+            if (hViewport.Camera is OrthographicCamera ocam)
+            {
+                ocam.NearPlaneDistance = -10000000;
+            }
+
+            hViewport.ZoomExtents(400);
+        }
 
 
         private void hViewport_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            hViewport.ZoomExtents();
+            ZoomToExtents();
         }
+
+
+
+        private void hViewport_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (_model != null)
+            {
+                _model.ZoomToContentRequested -= _model_ZoomToContentRequested;
+            }
+
+            if (DataContext is SurfacePlotModel model)
+            {
+                surfacePlotVisual3D.RegisterModel(model);
+
+                _model = model;
+                _model.ZoomToContentRequested += _model_ZoomToContentRequested;
+            }
+        }
+
+        private void _model_ZoomToContentRequested(object sender, System.EventArgs e)
+        {
+            _zoomExtentsTimer.Start();
+        }
+
+        private void _zoomExtentsTimer_Tick(object sender, EventArgs e)
+        {
+            _zoomExtentsTimer.Stop();
+            ZoomToExtents();
+        }
+
+
     }
 }

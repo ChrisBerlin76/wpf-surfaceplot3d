@@ -25,7 +25,7 @@ namespace WPFSurfacePlot3D
         ByValueZ
     }
 
-    class SurfacePlotModel : INotifyPropertyChanged
+    public class SurfacePlotModel : INotifyPropertyChanged
     {
         private int defaultFunctionSampleSize = 100;
 
@@ -35,17 +35,31 @@ namespace WPFSurfacePlot3D
 
         public SurfacePlotModel()
         {
+            SupressUpdates = true;
+            
             Title = "New Surface Plot";
             XAxisLabel = "X";
             YAxisLabel = "Y";
             ZAxisLabel = "Z";
 
+            
+            ShowGrid = true;
+            ShowAxes = true;
+            ShowSurfaceMesh = true;
+            ShowOrthographic = true;
             ColorCoding = ColorCoding.ByLights;
 
+            SupressUpdates = false;
+
             // Initialize the DataPoints collection
-            Func<double, double, double> sampleFunction = (x, y) => 10 * Math.Sin(Math.Sqrt(x * x + y * y)) / Math.Sqrt(x * x + y * y);
-            PlotFunction(sampleFunction, -10, 10);
+            //Func<double, double, double> sampleFunction = (x, y) => 10 * Math.Sin(Math.Sqrt(x * x + y * y)) / Math.Sqrt(x * x + y * y);
+            //PlotFunction(sampleFunction, -10, 10);
         }
+
+        public event EventHandler VisualUpdateRequested;
+
+        public event EventHandler ZoomToContentRequested;
+
 
         #region === Public Methods ===
 
@@ -63,10 +77,9 @@ namespace WPFSurfacePlot3D
                     newDataArray[i, j] = point;
                 }
             }
-            dataPoints = newDataArray;
+            DataPoints = newDataArray;
             CreateColorValues();
-
-            UpdateProperties();
+            RequestUpdateVisual(true);
         }
 
         public void PlotData(double[,] zData2DArray, double xMinimum, double xMaximum, double yMinimum, double yMaximum)
@@ -124,32 +137,7 @@ namespace WPFSurfacePlot3D
 
             DataPoints = CreateDataArrayFromFunction(function, xArray, yArray);
             CreateColorValues();
-
-            UpdateProperties();
-        }
-
-        private void UpdateProperties()
-        {
-            RaisePropertyChanged("DataPoints");
-            RaisePropertyChanged("ColorValues");
-            RaisePropertyChanged("Lights");
-            RaisePropertyChanged("SurfaceBrush");  // <-- This updates the visual 
-        }
-
-        private void CreateColorValues()
-        {
-            switch (ColorCoding)
-            {
-                case ColorCoding.ByValueZ:
-                    ColorValues = GetZData(DataPoints);
-                    break;
-                case ColorCoding.ByGradientY:
-                    ColorValues = FindGradientY(DataPoints);
-                    break;
-                case ColorCoding.ByLights:
-                    ColorValues = null;
-                    break;
-            }
+            RequestUpdateVisual(true);
         }
 
         #endregion
@@ -182,6 +170,42 @@ namespace WPFSurfacePlot3D
             return array;
         }
 
+        private void CreateColorValues()
+        {
+            switch (ColorCoding)
+            {
+                case ColorCoding.ByValueZ:
+                    ColorValues = GetZData(DataPoints);
+                    break;
+                case ColorCoding.ByGradientY:
+                    ColorValues = FindGradientY(DataPoints);
+                    break;
+                case ColorCoding.ByLights:
+                    ColorValues = null;
+                    break;
+            }
+        }
+
+        private void RequestUpdateVisual(bool zoomToContent=false)
+        {
+            if (SupressUpdates) return;
+
+            RaisePropertyChanged(nameof(Lights));
+            RaisePropertyChanged(nameof(SurfaceBrush));
+            RaisePropertyChanged(nameof(DataPoints));
+            RaisePropertyChanged(nameof(ColorValues));
+
+
+            VisualUpdateRequested?.Invoke(this, EventArgs.Empty);
+
+            if(zoomToContent)
+            {
+                ZoomToContentRequested?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+
+
         /*
         private void SetTicksAutomatically()
         {
@@ -197,7 +221,7 @@ namespace WPFSurfacePlot3D
 
         #endregion
 
-        #region === Exposed Properties ===
+        #region === Exposed Properties to SurfacePlotVisual3D ===
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -210,180 +234,20 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        private Point3D[,] dataPoints;
-        public Point3D[,] DataPoints
-        {
-            get { return dataPoints; }
-            set
-            {
-                dataPoints = value;
-                //RaisePropertyChanged("DataPoints");
-            }
-        }
+        //private Point3D[,] dataPoints;
+        //public Point3D[,] DataPoints
+        //{
+        //    get { return dataPoints; }
+        //    set
+        //    {
+        //        dataPoints = value;
+        //        //RaisePropertyChanged("DataPoints");   <-- Is updated by UpdatePropertyBindings()
+        //    }
+        //}
 
-        private double[] xAxisTicks;
-        public double[] XAxisTicks
-        {
-            get { return xAxisTicks; }
-            set
-            {
-                xAxisTicks = value;
-                //RaisePropertyChanged("DataPoints");
-            }
-        }
+        public Point3D[,] DataPoints { get; private set; }
 
-        private double[] yAxisTicks;
-        public double[] YAxisTicks
-        {
-            get { return yAxisTicks; }
-            set
-            {
-                yAxisTicks = value;
-                //RaisePropertyChanged("DataPoints");
-            }
-        }
-
-        private double[] zAxisTicks;
-        public double[] ZAxisTicks
-        {
-            get { return zAxisTicks; }
-            set
-            {
-                zAxisTicks = value;
-                //RaisePropertyChanged("DataPoints");
-            }
-        }
-
-        private string title;
-        public string Title
-        {
-            get { return title; }
-            set
-            {
-                title = value;
-                RaisePropertyChanged("Title");
-            }
-        }
-
-        private string xAxisLabel;
-        public string XAxisLabel
-        {
-            get { return xAxisLabel; }
-            set
-            {
-                xAxisLabel = value;
-                RaisePropertyChanged("XAxisLabel");
-            }
-        }
-
-        private string yAxisLabel;
-        public string YAxisLabel
-        {
-            get { return yAxisLabel; }
-            set
-            {
-                yAxisLabel = value;
-                RaisePropertyChanged("YAxisLabel");
-            }
-        }
-
-        private string zAxisLabel;
-        public string ZAxisLabel
-        {
-            get { return zAxisLabel; }
-            set
-            {
-                zAxisLabel = value;
-                RaisePropertyChanged("ZAxisLabel");
-            }
-        }
-
-        private bool showSurfaceMesh;
-        public bool ShowSurfaceMesh
-        {
-            get { return showSurfaceMesh; }
-            set
-            {
-                showSurfaceMesh = value;
-                RaisePropertyChanged("ShowSurfaceMesh");
-            }
-        }
-
-        private bool showContourLines;
-        public bool ShowContourLines
-        {
-            get { return showContourLines; }
-            set
-            {
-                showContourLines = value;
-                RaisePropertyChanged("ShowContourLines");
-            }
-        }
-
-        private bool showMiniCoordinates;
-        public bool ShowMiniCoordinates
-        {
-            get { return showMiniCoordinates; }
-            set
-            {
-                showMiniCoordinates = value;
-                RaisePropertyChanged("ShowMiniCoordinates");
-            }
-        }
-
-        private bool orthographic;
-        public bool Orthographic
-        {
-            get { return orthographic; }
-            set
-            {
-                orthographic = value;
-                RaisePropertyChanged("Orthographic");
-            }
-        }
-
-        private bool xYEqualLength;
-        public bool XYEqualLength
-        {
-            get { return xYEqualLength; }
-            set
-            {
-                xYEqualLength = value;
-                RaisePropertyChanged("XYEqualLength");
-            }
-        }
-
-        #endregion
-
-        /* // Do we actually need to keep any of these persistent variables for any reason...? (binding?)
-
-        private int xNumberOfPoints;
-        private int yNumberOfPoints;
-
-        private int xNumberOfTicks;
-        private int yNumberOfTicks;
-        private int zNumberOfTicks;
-
-        private double xTickInterval, yTickInterval, zTickInterval;
-        private double xTickMin, xTickMax, yTickMin, yTickMax, zTickMin, zTickMax; */
-        private double xMin, xMax, yMin, yMax, zMin, zMax;
-
-        /* OLD STUFF */
-
-        public double[,] ColorValues { get; set; }
-
-
-        public ColorCoding colorCoding;
-        public ColorCoding ColorCoding
-        {
-            get { return colorCoding; }
-            set
-            {
-                colorCoding = value;
-                //RaisePropertyChanged("ColorCoding");
-                //RaisePropertyChanged("SurfaceBrush");
-            }
-        }
+        public double[,] ColorValues { get; private set; }
 
         public Model3DGroup Lights
         {
@@ -429,11 +293,242 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        // http://en.wikipedia.org/wiki/Numerical_differentiation
-        public double[,] FindGradientY(Point3D[,] data)
+        #endregion
+
+        #region === Exposed Properties ===
+
+        private bool supressUpdates;
+        public bool SupressUpdates
         {
-            int n = data.GetUpperBound(0) + 1;
-            int m = data.GetUpperBound(0) + 1;
+            get { return supressUpdates; }
+            set
+            {
+                supressUpdates = value;
+                RaisePropertyChanged("SupressUpdates");
+            }
+        }
+
+        public ColorCoding colorCoding;
+        public ColorCoding ColorCoding
+        {
+            get { return colorCoding; }
+            set
+            {
+                colorCoding = value;
+                RaisePropertyChanged(nameof(ColorCoding));
+                CreateColorValues();
+                RequestUpdateVisual();
+            }
+        }
+
+        private double[] xAxisTicks;
+        public double[] XAxisTicks
+        {
+            get { return xAxisTicks; }
+            set
+            {
+                xAxisTicks = value;
+                RequestUpdateVisual();
+            }
+        }
+
+
+
+        private double[] yAxisTicks;
+        public double[] YAxisTicks
+        {
+            get { return yAxisTicks; }
+            set
+            {
+                yAxisTicks = value;
+                RequestUpdateVisual();
+            }
+        }
+
+        private double[] zAxisTicks;
+        public double[] ZAxisTicks
+        {
+            get { return zAxisTicks; }
+            set
+            {
+                zAxisTicks = value;
+                RequestUpdateVisual();
+            }
+        }
+
+        private string title;
+        public string Title
+        {
+            get { return title; }
+            set
+            {
+                title = value;
+                RaisePropertyChanged(nameof(Title));
+                // Only to View, not to Visual3D
+            }
+        }
+
+        private string xAxisLabel;
+        public string XAxisLabel
+        {
+            get { return xAxisLabel; }
+            set
+            {
+                xAxisLabel = value;
+                RaisePropertyChanged(nameof(XAxisLabel));
+                RequestUpdateVisual();
+            }
+        }
+
+        private string yAxisLabel;
+        public string YAxisLabel
+        {
+            get { return yAxisLabel; }
+            set
+            {
+                yAxisLabel = value;
+                RaisePropertyChanged(nameof(YAxisLabel));
+                RequestUpdateVisual();
+            }
+        }
+
+        private string zAxisLabel;
+        public string ZAxisLabel
+        {
+            get { return zAxisLabel; }
+            set
+            {
+                zAxisLabel = value;
+                RaisePropertyChanged(nameof(ZAxisLabel));
+                RequestUpdateVisual();
+            }
+        }
+
+        private bool showSurfaceMesh;
+        public bool ShowSurfaceMesh
+        {
+            get { return showSurfaceMesh; }
+            set
+            {
+                showSurfaceMesh = value;
+                RaisePropertyChanged(nameof(ShowSurfaceMesh));
+                RequestUpdateVisual();
+            }
+        }
+
+        private bool showContourLines;
+        public bool ShowContourLines
+        {
+            get { return showContourLines; }
+            set
+            {
+                showContourLines = value;
+                RaisePropertyChanged(nameof(ShowContourLines));
+                RequestUpdateVisual();
+            }
+        }
+
+        private bool showGrid;
+        public bool ShowGrid
+        {
+            get { return showGrid; }
+            set
+            {
+                showGrid = value;
+                RaisePropertyChanged(nameof(ShowGrid));
+                RequestUpdateVisual();
+            }
+        }
+
+        private bool showAxes;
+        public bool ShowAxes
+        {
+            get { return showAxes; }
+            set
+            {
+                showAxes = value;
+                RaisePropertyChanged(nameof(ShowAxes));
+                RequestUpdateVisual();
+            }
+        }
+
+        private bool showMiniCoordinates;
+        public bool ShowMiniCoordinates
+        {
+            get { return showMiniCoordinates; }
+            set
+            {
+                showMiniCoordinates = value;
+                RaisePropertyChanged(nameof(ShowMiniCoordinates));
+                // Only to HelixViewport3D, not to Visual3D
+            }
+        }
+
+        private bool showOrthographic;
+        public bool ShowOrthographic
+        {
+            get { return showOrthographic; }
+            set
+            {
+                showOrthographic = value;
+                RaisePropertyChanged(nameof(ShowOrthographic));
+                // Only to HelixViewport3D, not to Visual3D
+            }
+        }
+
+        private bool showXyIsometric;
+        public bool ShowXyIsometric
+        {
+            get { return showXyIsometric; }
+            set
+            {
+                showXyIsometric = value;
+                RaisePropertyChanged(nameof(ShowXyIsometric));
+                RequestUpdateVisual(true);
+            }
+        }
+
+        private bool showXzIsometric;
+        public bool ShowXzIsometric
+        {
+            get { return showXzIsometric; }
+            set
+            {
+                showXzIsometric = value;
+                RaisePropertyChanged(nameof(ShowXzIsometric));
+                RequestUpdateVisual(true);
+            }
+        }
+
+        #endregion
+
+        /* // Do we actually need to keep any of these persistent variables for any reason...? (binding?)
+
+        private int xNumberOfPoints;
+        private int yNumberOfPoints;
+
+        private int xNumberOfTicks;
+        private int yNumberOfTicks;
+        private int zNumberOfTicks;
+
+        private double xTickInterval, yTickInterval, zTickInterval;
+        private double xTickMin, xTickMax, yTickMin, yTickMax, zTickMin, zTickMax; */
+        private double xMin, xMax, yMin, yMax, zMin, zMax;
+
+        /* OLD STUFF */
+
+        
+
+
+
+
+
+
+        // http://en.wikipedia.org/wiki/Numerical_differentiation
+        private double[,] FindGradientY(Point3D[,] data)
+        {
+            int n = data.GetLength(0);
+            int m = data.GetLength(1);
             var K = new double[n, m];
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < m; j++)
@@ -456,7 +551,7 @@ namespace WPFSurfacePlot3D
             return K;
         }
 
-        public double[,] GetZData(Point3D[,] data)
+        private double[,] GetZData(Point3D[,] data)
         {
             int n = data.GetLength(0);
             int m = data.GetLength(1);
