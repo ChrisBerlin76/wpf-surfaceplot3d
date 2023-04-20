@@ -10,14 +10,14 @@ namespace WPFSurfacePlot3D
     public enum ColorCoding
     {
         /// <summary>
-        /// No color coding, use coloured lights
-        /// </summary>
-        ByLights,
-
-        /// <summary>
         /// Color code by Z-value using a gradient brush with white ambient light
         /// </summary>
         ByValueZ,
+
+        /// <summary>
+        /// No color coding, use coloured lights
+        /// </summary>
+        ByLights,
 
         /// <summary>
         /// Color code by gradient in y-direction using a gradient brush with white ambient light
@@ -55,7 +55,7 @@ namespace WPFSurfacePlot3D
         // Brush presets
         private readonly Brush BlueWhiteRedBrush = BrushHelper.CreateGradientBrush(Colors.Blue, Colors.White, Colors.Red);
         private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
-        private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Colors.Black, Colors.White);
+        private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Color.FromRgb(20,20,20), Colors.White);
 
 
         // So the overall goal of this section is to output the appropriate values to SurfacePlotVisual3D - namely,
@@ -73,12 +73,12 @@ namespace WPFSurfacePlot3D
 
 
             BrushPreset = BrushPreset.BlueWhiteRed;
-            CustomSurfaceBrush = BrushHelper.CreateGradientBrush(Colors.Violet, Colors.Red, Colors.LightGoldenrodYellow, Colors.ForestGreen, Colors.Lime);
+            CustomSurfaceBrush = BrushHelper.CreateGradientBrush(Colors.DarkViolet, Colors.Red, Colors.Goldenrod, Colors.ForestGreen, Colors.Lime, Colors.White);
             ShowGrid = true;
             ShowAxes = true;
             ShowSurfaceMesh = true;
             ShowOrthographic = true;
-            ColorCoding = ColorCoding.ByLights;
+            ColorCoding = ColorCoding.ByValueZ;
 
             SupressUpdates = false;
 
@@ -491,17 +491,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        //private bool showContourLines;
-        //public bool ShowContourLines
-        //{
-        //    get { return showContourLines; }
-        //    set
-        //    {
-        //        showContourLines = value;
-        //        RaisePropertyChanged(nameof(ShowContourLines));
-        //        RequestUpdateVisual();
-        //    }
-        //}
+        private bool showContourLines;
+        public bool ShowContourLines
+        {
+            get { return showContourLines; }
+            set
+            {
+                showContourLines = value;
+                RaisePropertyChanged(nameof(ShowContourLines));
+                RequestUpdateVisual();
+            }
+        }
 
         private bool showGrid;
         public bool ShowGrid
@@ -642,6 +642,8 @@ namespace WPFSurfacePlot3D
 
         private double[,] GetZData(Point3D[,] data)
         {
+            if(data==null) return null;
+            
             int n = data.GetLength(0);
             int m = data.GetLength(1);
             var K = new double[n, m];

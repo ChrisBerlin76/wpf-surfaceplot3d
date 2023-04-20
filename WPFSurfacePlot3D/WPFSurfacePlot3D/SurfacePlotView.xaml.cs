@@ -24,6 +24,7 @@ namespace WPFSurfacePlot3D
             hViewport.ZoomExtentsGesture = new KeyGesture(Key.Space);
             hViewport.TopViewGesture = new KeyGesture(Key.Space);
 
+            hViewport.ResetCameraGesture= new KeyGesture(Key.Space, ModifierKeys.Control);
 
             _zoomExtentsTimer = new DispatcherTimer();
             _zoomExtentsTimer.Interval = TimeSpan.FromMilliseconds(200);

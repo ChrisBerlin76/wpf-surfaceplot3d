@@ -111,8 +111,8 @@ namespace WPFSurfacePlot3D
                     break;
 
                 case FunctionOptions.BigDataPlot:
-                    const int sizeX1 = 200;
-                    const int sizeY1 = 300;
+                    const int sizeX1 = 201;
+                    const int sizeY1 = 301;
                     double r = sizeX1 / 2;
                     double s = sizeY1 / 2;
                     double[,] arrayOfPoints1 = new double[sizeX1, sizeY1];
