@@ -113,7 +113,8 @@ namespace WPFSurfacePlot3D
         public static readonly DependencyProperty SurfaceBrushProperty = DependencyProperty.Register(nameof(SurfaceBrush), typeof(Brush), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
 
 
-
+        public double[] XAxisTicks { get; set; }
+        public double[] YAxisTicks { get; set; }
 
 
 
@@ -192,6 +193,8 @@ namespace WPFSurfacePlot3D
                 SurfaceBrush= _model.CurrentSurfaceBrush;
                 ShowXyIsometric = _model.ShowXyIsometric;
                 ShowZIsometric = _model.ShowZIsometric;
+                XAxisTicks = _model.XAxisTicks;
+                YAxisTicks = _model.YAxisTicks;
             }
 
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using Xceed.Wpf.Toolkit.PropertyGrid.Editors;
 
 namespace WPFSurfacePlot3D
 {
@@ -100,33 +101,25 @@ namespace WPFSurfacePlot3D
         {
             XAxisTicks = null;
             YAxisTicks = null;
-
-            PlotData2Array(zData2DArray);
+            PlotData2DArray(zData2DArray);
         }
 
         public void PlotData(double[,] zData2DArray, double xMinimum, double xMaximum, double yMinimum, double yMaximum)
         {
             int n = zData2DArray.GetLength(0);
             int m = zData2DArray.GetLength(1);
-
-
-            var xArray = CreateLinearlySpacedArray2(xMinimum, xMaximum, n);
-            var yArray = CreateLinearlySpacedArray2(yMinimum, yMaximum, m);
-            PlotData(zData2DArray, xArray, yArray);
+            XAxisTicks = CreateLinearlySpacedArray2(xMinimum, xMaximum, n);
+            YAxisTicks = CreateLinearlySpacedArray2(yMinimum, yMaximum, m);
+            PlotData(zData2DArray, XAxisTicks, YAxisTicks);
         }
 
         public void PlotData(double[,] zData2DArray, double[] xArray, double[] yArray)
         {
             int n = zData2DArray.GetLength(0);
             int m = zData2DArray.GetLength(1);
-
-            if (n != xArray.Length) throw new Exception("SurfacePlotModel: PlotData() zData2DArray size x not equal to xArray size");
-            if (m != yArray.Length) throw new Exception("SurfacePlotModel: PlotData() zData2DArray size y not equal to yArray size");
-
             XAxisTicks = xArray;
             YAxisTicks = yArray;
-
-            PlotData2Array(zData2DArray);
+            PlotData2DArray(zData2DArray, xArray, yArray);
         }
 
         public void PlotData(Point3D[,] point3DArray)
@@ -192,16 +185,24 @@ namespace WPFSurfacePlot3D
         #region === Private Methods ===
 
 
-        private void PlotData2Array(double[,] zData2DArray)
+        private void PlotData2DArray(double[,] zData2DArray, double[] xArray=null, double[] yArray=null)
         {
             int n = zData2DArray.GetLength(0);
             int m = zData2DArray.GetLength(1);
+
+            if (xArray != null && xArray.Length != n) throw new Exception("SurfacePlotModel: PlotData2DArray() zData2DArray size x not equal to xArray size");
+            if (yArray != null && yArray.Length != m) throw new Exception("SurfacePlotModel: PlotData2DArray() zData2DArray size y not equal to yArray size");
+
             Point3D[,] newDataArray = new Point3D[n, m];
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < m; j++)
                 {
-                    Point3D point = new Point3D(i, j, zData2DArray[i, j]);
+                    double x = i;
+                    double y = j;
+                    if (xArray != null) x = xArray[i];
+                    if (yArray != null) y = yArray[j];
+                    Point3D point = new Point3D(x, y, zData2DArray[i, j]);
                     newDataArray[i, j] = point;
                 }
             }
