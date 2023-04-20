@@ -59,6 +59,8 @@ namespace WPFSurfacePlot3D
         private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
         private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Color.FromRgb(20,20,20), Colors.White);
 
+        private double _xMax, _xMin, _yMax, _yMin;
+
 
         // So the overall goal of this section is to output the appropriate values to SurfacePlotVisual3D - namely,
         // - DataPoints as Point3D, plus xAxisTicks (and y, z) as double[]
@@ -155,10 +157,10 @@ namespace WPFSurfacePlot3D
         public void PlotFunction(Func<double, double, double> function, double xMinimum, double xMaximum, double yMinimum, double yMaximum, int xSampleSize, int ySampleSize)
         {
             // todo - implement checks to ensure the input parameters make sense. Maybe a SetXYRange internal method?
-            xMin = xMinimum;
-            xMax = xMaximum;
-            yMin = yMinimum;
-            yMax = yMaximum;
+            _xMin = xMinimum;
+            _xMax = xMaximum;
+            _yMin = yMinimum;
+            _yMax = yMaximum;
 
             double[] xArray = CreateLinearlySpacedArray(xMinimum, xMaximum, xSampleSize);
             double[] yArray = CreateLinearlySpacedArray(yMinimum, yMaximum, ySampleSize);
@@ -229,7 +231,7 @@ namespace WPFSurfacePlot3D
         private double[] CreateLinearlySpacedArray(double minValue, double maxValue, int numberOfPoints)
         {
             double[] array = new double[numberOfPoints];
-            double intervalSize = (xMax - xMin) / (numberOfPoints - 1);
+            double intervalSize = (_xMax - _xMin) / (numberOfPoints - 1);
             for (int i = 0; i < numberOfPoints; i++)
             {
                 array[i] = minValue + i * intervalSize;
@@ -635,7 +637,7 @@ namespace WPFSurfacePlot3D
 
         private double xTickInterval, yTickInterval, zTickInterval;
         private double xTickMin, xTickMax, yTickMin, yTickMax, zTickMin, zTickMax; */
-        private double xMin, xMax, yMin, yMax, zMin, zMax;
+        //private double xMin, xMax, yMin, yMax, zMin, zMax;
 
         /* OLD STUFF */
 

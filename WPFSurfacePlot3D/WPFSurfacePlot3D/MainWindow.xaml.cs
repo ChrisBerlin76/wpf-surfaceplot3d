@@ -32,7 +32,7 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Used to control which demo function the user has chosen to display.
         /// </summary>
-        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, DataPlot2, BigDataPlot };
+        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, DataPlotFlexXY, BigDataPlot };
 
 
 
@@ -71,16 +71,21 @@ namespace WPFSurfacePlot3D
 
             switch (currentOption)
             {
+                case FunctionOptions.Sinc:
+                    function = (x, y) => 10 * Math.Sin(Math.Sqrt(x * x + y * y)) / Math.Sqrt(x * x + y * y);
+                    viewModel.PlotFunction(function, -10, 10);
+                    break;
+
+                case FunctionOptions.Ripple:
+                    function = (x, y) => 0.25 * Math.Sin(Math.PI * Math.PI * x * y);
+                    viewModel.PlotFunction(function, 0, 2, 300);
+                    break;
+
                 case FunctionOptions.Gaussian:
                     function = (x, y) => 5 * Math.Exp(-1 * Math.Pow(x, 2) / 4 - Math.Pow(y, 2) / 4) / (Math.Sqrt(2 * Math.PI));
                     viewModel.PlotFunction(function, -5, 5, 200);
                     break;
 
-                case FunctionOptions.Sinc:
-                    function = (x, y) => 10 * Math.Sin(Math.Sqrt(x * x + y * y)) / Math.Sqrt(x * x + y * y);
-                    viewModel.PlotFunction(function, -10, 10);
-                    break;
-                    
                 case FunctionOptions.Funnel:
                     function = (x, y) => -1 / (x * x + y * y);
                     viewModel.PlotFunction(function, -1, 1);
@@ -94,11 +99,6 @@ namespace WPFSurfacePlot3D
                 case FunctionOptions.Simple:
                     function = (x, y) => x * y;
                     viewModel.PlotFunction(function, -1, 1);
-                    break;
-
-                case FunctionOptions.Ripple:
-                    function = (x, y) => 0.25 * Math.Sin(Math.PI * Math.PI * x * y);
-                    viewModel.PlotFunction(function, 0, 2, 300);
                     break;
 
                 case FunctionOptions.DataPlot:
@@ -118,9 +118,9 @@ namespace WPFSurfacePlot3D
                     viewModel.PlotData(arrayOfPoints);
                     break;
 
-                case FunctionOptions.DataPlot2:
+                case FunctionOptions.DataPlotFlexXY:
                     sizeX = 10;
-                    sizeY = 20;
+                    sizeY = 15;
                     r = sizeX / 2;
                     s = sizeY / 2;
                     double[,] arrayOfPoints1 = new double[sizeX, sizeY];
@@ -132,9 +132,11 @@ namespace WPFSurfacePlot3D
                         }
                     }
 
-                    var xArray = SurfacePlotModel.CreateLinearlySpacedArray2(0, (sizeX) * 10, sizeX);
-                    var yArray = SurfacePlotModel.CreateLinearlySpacedArray2(0, (sizeY) * 10, sizeY);
+                    var xArray = new double[sizeX];
+                    var yArray = new double[sizeY];
 
+                    for (int i = 0; i < sizeX; i++) xArray[i] = (i + Math.Sin(i*1.2) * 0.4) * 3;
+                    for (int i = 0; i < sizeY; i++) yArray[i] = Math.Pow(i, 1.2) * 3;
 
                     //arrayOfPoints[5,5] = double.NaN;
                     viewModel.PlotData(arrayOfPoints1, xArray, yArray);

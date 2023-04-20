@@ -1,6 +1,7 @@
 ﻿using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -328,9 +329,28 @@ namespace WPFSurfacePlot3D
             // Build the axes labels model (i.e. the object that holds the axes labels and ticks)
             ModelVisual3D axesLabelsModel = new ModelVisual3D();
 
-            // Loop through x intervals - for the surface meshlines, the grid, and X axes ticks
-            for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
+            List<double> xValues = new List<double>();
+            List<double> yValues = new List<double>();
+            List<double> zValues = new List<double>();
+
+
+
+            if (XAxisTicks!=null && XAxisTicks.Length>1)
             {
+                xValues = XAxisTicks.ToList();
+            }
+            else
+            {
+                // Loop through x intervals - for the surface meshlines, the grid, and X axes ticks
+                for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
+                {
+                    xValues.Add(x);
+                }
+            }
+
+
+            foreach (double x in xValues)
+            { 
                 double xs = x * stretchX;
                 
                 // Add surface mesh lines which denote intervals along the x-axis
@@ -365,11 +385,22 @@ namespace WPFSurfacePlot3D
                 }
             }
 
-            // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
-            for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
+            if (YAxisTicks != null && YAxisTicks.Length > 1)
             {
+                yValues = YAxisTicks.ToList();
+            }
+            else
+            {
+                // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
+                for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
+                {
+                    yValues.Add(y);
+                }
+            }
 
 
+            foreach (double y in yValues)
+            {
                 // Add surface mesh lines which denote intervals along the y-axis
                 if (showSurfaceMesh)
                 {
@@ -405,6 +436,11 @@ namespace WPFSurfacePlot3D
             // Loop through z intervals - for the grid, and Z axes ticks
             for (double z = minZ; z <= maxZ + 0.0001; z += ZAxisInterval)
             {
+            //    yValues.Add(z);
+            //}
+
+            //foreach (double z in zValues)
+            //{
                 double zs = z * stretchZ;
 
                 // Grid lines
