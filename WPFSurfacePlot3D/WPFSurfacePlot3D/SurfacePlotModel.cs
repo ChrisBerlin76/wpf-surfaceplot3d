@@ -574,14 +574,14 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        private bool showXzIsometric;
-        public bool ShowXzIsometric
+        private bool showZIsometric;
+        public bool ShowZIsometric
         {
-            get { return showXzIsometric; }
+            get { return showZIsometric; }
             set
             {
-                showXzIsometric = value;
-                RaisePropertyChanged(nameof(ShowXzIsometric));
+                showZIsometric = value;
+                RaisePropertyChanged(nameof(ShowZIsometric));
                 RequestUpdateVisual(true);
             }
         }

@@ -92,13 +92,13 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Sets X and Y axis to equal length
         /// </summary>
-        public bool ShowXzIsometric
+        public bool ShowZIsometric
         {
-            get { return (bool)GetValue(ShowXzIsometricProperty); }
-            set { SetValue(ShowXzIsometricProperty, value); }
+            get { return (bool)GetValue(ShowZIsometricProperty); }
+            set { SetValue(ShowZIsometricProperty, value); }
         }
 
-        public static readonly DependencyProperty ShowXzIsometricProperty = DependencyProperty.Register("ShowXzIsometric", typeof(bool), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(false));
+        public static readonly DependencyProperty ShowZIsometricProperty = DependencyProperty.Register(nameof(ShowZIsometric), typeof(bool), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(false));
 
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace WPFSurfacePlot3D
                 ColorValues = _model.ColorValues;
                 SurfaceBrush= _model.CurrentSurfaceBrush;
                 ShowXyIsometric = _model.ShowXyIsometric;
-                ShowXzIsometric = _model.ShowXzIsometric;
+                ShowZIsometric = _model.ShowZIsometric;
             }
 
 
@@ -235,8 +235,8 @@ namespace WPFSurfacePlot3D
 
             //double maxDiff = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
             //double minDiff = Math.Min(Math.Min(maxX - minX, maxY - minY), maxZ - minZ);
-            double factorYX = (maxY - minY) / (maxX - minX);
-            double factorZX = (maxZ - minZ) / (maxX - minX);
+            double factorY = (maxY - minY) / (maxX - minX);
+            double factorZ = (maxZ - minZ) / Math.Max((maxX - minX), (maxY - minY));
             double maxDiff = Math.Max(maxX - minX, maxY - minY);
             double minDiff = Math.Min(maxX - minX, maxY - minY);
             axesOffset = maxDiff * 0.04;
@@ -281,8 +281,8 @@ namespace WPFSurfacePlot3D
             double stretchX = 1;
             double stretchZ = 1;
 
-            if (ShowXyIsometric) stretchX = factorYX;
-            if (ShowXzIsometric) stretchZ = 1 / factorZX;
+            if (ShowXyIsometric) stretchX = factorY;
+            if (ShowZIsometric) stretchZ = 1 / factorZ;
 
 
             if(stretchX != 1 || stretchZ!=1)
