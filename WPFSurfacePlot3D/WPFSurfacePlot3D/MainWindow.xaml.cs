@@ -150,7 +150,7 @@ namespace WPFSurfacePlot3D
                     {
                         for (int j = 0; j < sizeY; j++)
                         {
-                            arrayOfPoints2[i, j] = 1000 * Math.Sin(Math.Sqrt((i - r) * (i - 1) + (j-s) * (j - 1)) * 0.1) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
+                            arrayOfPoints2[i, j] = 1000 * Math.Sin(Math.Sqrt((i - r) * (i - r) + (j-s) * (j - s)) * 0.1) / Math.Sqrt((i - r) * (i - r) + (j - s) * (j - s) + 0.0001);
                         }
                     }
                     viewModel.PlotData(arrayOfPoints2);
