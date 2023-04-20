@@ -49,8 +49,6 @@ namespace WPFSurfacePlot3D
         Custom
     }
 
-
-
     public class SurfacePlotModel : INotifyPropertyChanged
     {
         private int defaultFunctionSampleSize = 100;
@@ -263,7 +261,15 @@ namespace WPFSurfacePlot3D
 
             // ZMax / ZCenter / ZMin bestimmen
 
-            if (ColorValues == null) return;
+            if (ColorValues == null)
+            {
+                ZMax = string.Empty;
+                ZCenter = string.Empty;
+                ZMin = string.Empty;
+                ZMaxC = string.Empty;
+                ZMinC = string.Empty;
+                return;
+            }
 
             int n = ColorValues.GetLength(0);
             int m = ColorValues.GetLength(1);
@@ -425,6 +431,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
+        private string zMaxC;
+        public string ZMaxC
+        {
+            get { return zMaxC; }
+            private set
+            {
+                zMaxC = value;
+                RaisePropertyChanged(nameof(ZMaxC));
+            }
+        }
+
         private string zCenter;
         public string ZCenter
         {
@@ -433,6 +450,19 @@ namespace WPFSurfacePlot3D
             {
                 zCenter = value;
                 RaisePropertyChanged(nameof(ZCenter));
+            }
+        }
+
+
+
+        private string zMinC;
+        public string ZMinC
+        {
+            get { return zMinC; }
+            private set
+            {
+                zMinC = value;
+                RaisePropertyChanged(nameof(ZMinC));
             }
         }
 
@@ -446,30 +476,6 @@ namespace WPFSurfacePlot3D
                 RaisePropertyChanged(nameof(ZMin));
             }
         }
-
-
-        private string zMaxC;
-        public string ZMaxC
-        {
-            get { return zMaxC; }
-            private set
-            {
-                zMaxC = value;
-                RaisePropertyChanged(nameof(ZMaxC));
-            }
-        }
-
-        private string zMinC;
-        public string ZMinC
-        {
-            get { return zMinC; }
-            private set
-            {
-                zMinC = value;
-                RaisePropertyChanged(nameof(ZMinC));
-            }
-        }
-
 
 
         #endregion
