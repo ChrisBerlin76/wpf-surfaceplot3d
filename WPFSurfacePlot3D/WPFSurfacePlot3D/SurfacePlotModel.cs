@@ -639,6 +639,19 @@ namespace WPFSurfacePlot3D
             }
         }
 
+
+        private bool showSurfaceMeshZValues;
+        public bool ShowSurfaceMeshZValues
+        {
+            get { return showSurfaceMeshZValues; }
+            set
+            {
+                showSurfaceMeshZValues = value;
+                RaisePropertyChanged(nameof(ShowSurfaceMeshZValues));
+                RequestUpdateVisual();
+            }
+        }
+
         //private bool showContourLines;
         //public bool ShowContourLines
         //{
