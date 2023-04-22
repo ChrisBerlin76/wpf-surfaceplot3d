@@ -407,9 +407,6 @@ namespace WPFSurfacePlot3D
                 }
 
 
-                
-
-
                 foreach (double x in xValues)
                 {
                     double xs = x * _stretchX;
@@ -421,21 +418,24 @@ namespace WPFSurfacePlot3D
                         double i = (x - minX) / (maxX - minX) * (numberOfRows - 1);
                         for (int j = 0; j < numberOfColumns; j++)
                         {
+                            // if YAxisTicks is set, then we have unequal spacing in Y Direction
                             if (YAxisTicks != null && YAxisTicks.Length == numberOfColumns)
                             {
                                 px = xs;
                                 py = YAxisTicks[j];
-                                p = DoBilinearInterpolation(datapoints, px, py);                               
+                                p = DoBilinearInterpolationUnequalSpacing(datapoints, px, py);
+
+                                if (showSurfaceMeshZValues)
+                                {
+                                    zValuePoints.Add(new Tuple<Point3D, double>(p, p.Z / _stretchZ));
+                                }
                             }
                             else
                             {
-                                p = DoBilinearInterpolation2(datapoints, i, j);
+                                p = DoBilinearInterpolation(datapoints, i, j);
                             }
 
-                            if (showSurfaceMeshZValues)
-                            {
-                                zValuePoints.Add(new Tuple<Point3D, double>(p, p.Z / _stretchZ));
-                            }
+
                             if (showSurfaceMesh)
                             {
                                 surfacePath.Add(p);
@@ -480,15 +480,16 @@ namespace WPFSurfacePlot3D
                         double j = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
                         for (int i = 0; i < numberOfRows; i++)
                         {
+                            // if XAxisTicks is set, then we have unequal spacing in X Direction
                             if (XAxisTicks != null && XAxisTicks.Length == numberOfRows)
                             {
                                 px = XAxisTicks[i] * _stretchX;
                                 py = y;
-                                surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                                surfacePath.Add(DoBilinearInterpolationUnequalSpacing(datapoints, px, py));
                             }
                             else
                             {
-                                surfacePath.Add(DoBilinearInterpolation2(datapoints, i, j));
+                                surfacePath.Add(DoBilinearInterpolation(datapoints, i, j));
                             }
                         }
                         surfaceMeshLinesBuilder.AddTube(surfacePath, _lineThickness, 9, false);
@@ -673,7 +674,7 @@ namespace WPFSurfacePlot3D
         /// <param name="i">First index: i.e., points[i, j]</param>
         /// <param name="j">Second index: i.e., points[i, j]</param>
         /// <returns></returns>
-        private static Point3D DoBilinearInterpolation(Point3D[,] points, double x, double y)
+        private static Point3D DoBilinearInterpolationUnequalSpacing(Point3D[,] points, double x, double y)
         {
             int n = points.GetUpperBound(0);
             int m = points.GetUpperBound(1);
@@ -737,7 +738,7 @@ namespace WPFSurfacePlot3D
         /// <param name="i">First index: i.e., points[i, j]</param>
         /// <param name="j">Second index: i.e., points[i, j]</param>
         /// <returns></returns>
-        private static Point3D DoBilinearInterpolation2(Point3D[,] points, double i, double j)
+        private static Point3D DoBilinearInterpolation(Point3D[,] points, double i, double j)
         {
             int n = points.GetUpperBound(0);
             int m = points.GetUpperBound(1);
