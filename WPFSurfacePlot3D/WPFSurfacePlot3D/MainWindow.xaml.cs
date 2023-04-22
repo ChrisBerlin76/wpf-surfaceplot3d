@@ -32,7 +32,7 @@ namespace WPFSurfacePlot3D
         /// <summary>
         /// Used to control which demo function the user has chosen to display.
         /// </summary>
-        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, DataPlotFlexXY, BigDataPlot };
+        enum FunctionOptions { Sinc, Ripple, Gaussian, Funnel, Origami, Simple, DataPlot, DataPlotUnequalXY, BigDataPlot };
 
 
 
@@ -118,7 +118,7 @@ namespace WPFSurfacePlot3D
                     viewModel.PlotData(arrayOfPoints);
                     break;
 
-                case FunctionOptions.DataPlotFlexXY:
+                case FunctionOptions.DataPlotUnequalXY:
                     sizeX = 10;
                     sizeY = 15;
                     r = sizeX / 2;

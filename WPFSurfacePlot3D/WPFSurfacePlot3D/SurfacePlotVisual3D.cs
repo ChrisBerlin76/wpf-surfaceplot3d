@@ -2,10 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Shapes;
 using Xceed.Wpf.Toolkit.PropertyGrid.Editors;
 
 namespace WPFSurfacePlot3D
@@ -355,6 +357,7 @@ namespace WPFSurfacePlot3D
                 bool showSurfaceMeshZValues = _model != null ? _model.ShowSurfaceMeshZValues : true;
                 bool showAxes = _model != null ? _model.ShowAxes : true;
                 bool showGrid = showAxes;
+                bool showContourLines = _model != null ? _model.ShowContourLines : false;
 
                 // Build the surface model (i.e. the coloured surface model)
                 MeshBuilder surfaceModelBuilder = new MeshBuilder();
@@ -365,7 +368,6 @@ namespace WPFSurfacePlot3D
 
                 // Instantiate MeshBuilder objects for the Grid and SurfaceMeshLines meshes
                 MeshBuilder surfaceMeshLinesBuilder = new MeshBuilder();
-                MeshBuilder surfaceContourLinesBuilder = new MeshBuilder();
                 MeshBuilder gridBuilder = new MeshBuilder();
 
                 // Build the axes labels model (i.e. the object that holds the axes labels and ticks)
@@ -445,7 +447,7 @@ namespace WPFSurfacePlot3D
                         if (showSurfaceMesh)
                         {
                             surfaceMeshLinesBuilder.AddTube(surfacePath, _lineThickness, 9, false);
-                        } 
+                        }
                     }
 
                     // Axes labels
@@ -563,6 +565,58 @@ namespace WPFSurfacePlot3D
                     axesLabelsModel.Children.Add(zLabel);
                 }
 
+
+                // Drawing of contour lines for multiple heights
+                if (showContourLines && _model?.ContourLinesZ != null && _model?.ContourLinesZ.Count() > 0)
+                {
+                    foreach (var z in _model.ContourLinesZ)
+                    {
+                        var contourPoints = CalculateContourPoints(DataPoints, z);
+                        int k = contourPoints.Count;
+
+                        // Calculation of median of point distances
+                        var distances = new List<double>(k);
+                        for (int i = 0; i < k - 1; i++)
+                        {
+                            var a = contourPoints[i];
+                            var b = contourPoints[i + 1];
+                            var dist = Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+                            if (dist > 0.001) distances.Add(dist);
+                        }
+                        var distMedian = CalculateMedian(distances.ToArray());
+
+                        // Drawing contour lines
+                        for (int i = 0; i < k - 1; i++)
+                        {
+                            var a = contourPoints[i];
+                            var b = contourPoints[i + 1];
+
+                            // distance threshold in order to seperate different lines/areas of contour points
+                            double dt = distMedian * 2.5;
+                            if (Math.Abs(a.X - b.X) > dt || Math.Abs(a.Y - b.Y) > dt) continue;
+
+                            // Stretching for Isometric view
+                            a.X *= _stretchX;
+                            b.X *= _stretchX;
+                            a.Z *= _stretchZ;
+                            b.Z *= _stretchZ;
+
+                            // Lift z position a bit to improve visibility
+                            a.Z += _sizeFactor * 0.1;
+                            b.Z += _sizeFactor * 0.1;
+
+                            // Use Lines
+                            LinesVisual3D line = new LinesVisual3D()
+                            {
+                                Thickness = 3,
+                                Points = new Point3DCollection() { a, b }
+                            };
+                            this.Children.Add(line);
+                        }
+                    }
+                }
+
+
                 if (showSurfaceMeshZValues)
                 {
                     try
@@ -598,11 +652,6 @@ namespace WPFSurfacePlot3D
                 {
                     this.Children.Add(zValueLabelsModel);
                 }
-
-                //ScaleTransform3D surfaceTransform = new ScaleTransform3D(20, 20, 20, 0, 0, 0);
-                //newModelGroup.Transform = surfaceTransform;
-
-
 
             }
             catch (Exception ex)
@@ -668,7 +717,7 @@ namespace WPFSurfacePlot3D
         }
 
         // <summary>
-        /// The bilinear interpolation method calculates a weighted "average" between four points on a discrete grid, allowing us to build a "smooth" path between consecutive points along a grid.
+        /// The bilinear interpolation method calculates a weighted "average" between four points on a grid, with unequal spacing, allowing us to build a "smooth" path between consecutive points along a grid.
         /// </summary>
         /// <param name="points">Points array - containing the data to be interpolated</param>
         /// <param name="i">First index: i.e., points[i, j]</param>
@@ -784,6 +833,105 @@ namespace WPFSurfacePlot3D
             }
         }
 
+        private static List<Point3D> CalculateContourPoints(Point3D[,] data, double zValue)
+        {
+            List<Point3D> contourPoints = new List<Point3D>();
+            int rows = data.GetLength(0);
+            int cols = data.GetLength(1);
 
+            for (int i = 0; i < rows - 1; i++)
+            {
+                for (int j = 0; j < cols - 1; j++)
+                {
+                    var p00 = data[i, j];
+                    var p10 = data[i + 1, j];
+                    var p01 = data[i, j + 1];
+                    var p11 = data[i + 1, j + 1];
+
+                    TryInterpolate2PointsByZ(p00, p10, zValue, ref contourPoints);
+                    TryInterpolate2PointsByZ(p00, p01, zValue, ref contourPoints);
+                    //TryInterpolate2PointsByZ(p00, p11, zValue, ref contourPoints);  // diagonals not interpolated
+                    TryInterpolate2PointsByZ(p11, p10, zValue, ref contourPoints);
+                    TryInterpolate2PointsByZ(p11, p01, zValue, ref contourPoints);
+                    //TryInterpolate2PointsByZ(p10, p01, zValue, ref contourPoints);  // diagonals not interpolated
+                }
+            }
+            SortPointsByDistance(contourPoints);
+            return contourPoints;
+        }
+
+        public static void SortPointsByDistance(List<Point3D> points)
+        {
+            if (points == null || points.Count < 2)
+            {
+                return;
+            }
+
+            Point3D currentPoint = points[0];
+            points.RemoveAt(0);
+
+            List<Point3D> sortedPoints = new List<Point3D> { currentPoint };
+
+            while (points.Count > 0)
+            {
+                double minDistance = double.MaxValue;
+                int minIndex = -1;
+
+                for (int i = 0; i < points.Count; i++)
+                {
+                    double distance = (points[i] - currentPoint).Length;
+
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        minIndex = i;
+                    }
+                }
+
+                currentPoint = points[minIndex];
+                points.RemoveAt(minIndex);
+                sortedPoints.Add(currentPoint);
+            }
+
+            points.AddRange(sortedPoints);
+        }
+
+        private static void TryInterpolate2PointsByZ(Point3D p0, Point3D p1, double z, ref List<Point3D> contourPoints)
+        {
+            double zMax = Math.Max(p0.Z, p1.Z);
+            double zMin = Math.Min(p0.Z, p1.Z);
+            if (z >= zMin && z < zMax)
+            {
+                //double xMax = Math.Max(p0.X, p1.X);
+                //double xMin = Math.Min(p0.X, p1.X);
+                //double yMax = Math.Max(p0.Y, p1.Y);
+                //double yMin = Math.Min(p0.Y, p1.Y);
+
+                var dxdz = (p1.X - p0.X) / (p1.Z - p0.Z);
+                var dydz = (p1.Y - p0.Y) / (p1.Z - p0.Z);
+                var x = p0.X + dxdz * (z - p0.Z);
+                var y = p0.Y + dydz * (z - p0.Z);
+                contourPoints.Add(new Point3D(x, y, z));
+            }
+        }
+
+        private static double CalculateMedian(double[] numbers)
+        {
+            if (numbers == null || numbers.Length == 0) return 0;
+
+            Array.Sort(numbers);
+
+            int size = numbers.Length;
+            int mid = size / 2;
+
+            if (size % 2 == 0)
+            {
+                return (numbers[mid - 1] + numbers[mid]) / 2.0;
+            }
+            else
+            {
+                return numbers[mid];
+            }
+        }
     }
 }

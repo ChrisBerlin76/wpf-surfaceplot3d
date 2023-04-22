@@ -84,6 +84,8 @@ namespace WPFSurfacePlot3D
             LineThickness = 7;
             LineColor = Colors.Gray;
 
+            ContourLinesZ = new double[] { 0, 1, 2, 3 };
+
             SupressUpdates = false;
 
             // Initialize the DataPoints collection
@@ -687,17 +689,17 @@ namespace WPFSurfacePlot3D
             }
         }
 
-        //private bool showContourLines;
-        //public bool ShowContourLines
-        //{
-        //    get { return showContourLines; }
-        //    set
-        //    {
-        //        showContourLines = value;
-        //        RaisePropertyChanged(nameof(ShowContourLines));
-        //        RequestUpdateVisual();
-        //    }
-        //}
+        private bool showContourLines;
+        public bool ShowContourLines
+        {
+            get { return showContourLines; }
+            set
+            {
+                showContourLines = value;
+                RaisePropertyChanged(nameof(ShowContourLines));
+                RequestUpdateVisual();
+            }
+        }
 
 
         private bool showAxes;
@@ -794,6 +796,19 @@ namespace WPFSurfacePlot3D
                 lineColor = value;
                 RaisePropertyChanged(nameof(LineColor));
                 RequestUpdateVisual(true);
+            }
+        }
+
+
+        private double[] contourLinesZ;
+        public double[] ContourLinesZ
+        {
+            get { return contourLinesZ; }
+            set
+            {
+                contourLinesZ = value;
+                RaisePropertyChanged(nameof(ContourLinesZ));
+                RequestUpdateVisual();
             }
         }
 
