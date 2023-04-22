@@ -29,7 +29,7 @@
             ZoomExtentsWhenLoaded="True" 
             PanGesture="RightClick" 
             RotateGesture="LeftClick"
-            ShowViewCube="True"
+            ShowViewCube="{Binding ShowViewCube, UpdateSourceTrigger=PropertyChanged}"
             Orthographic="{Binding ShowOrthographic, UpdateSourceTrigger=PropertyChanged}"
             MouseDoubleClick="hViewport_MouseDoubleClick"
             ShowCoordinateSystem="{Binding ShowMiniCoordinates, UpdateSourceTrigger=PropertyChanged}" 

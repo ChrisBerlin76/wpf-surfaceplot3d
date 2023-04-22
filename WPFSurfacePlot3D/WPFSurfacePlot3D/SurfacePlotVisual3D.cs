@@ -19,7 +19,8 @@ namespace WPFSurfacePlot3D
         private double _stretchX = 1;
         private double _stretchZ = 1;
         private double _lineThickness = 0.01;
-        private double _axesOffset = 1.0;
+        private Material _lineMaterial = MaterialHelper.CreateMaterial(Colors.Black);
+        private double _sizeFactor = 1.0;
 
         /// <summary>
         /// The constructor for a new SurfacePlotVisual3D object.
@@ -33,7 +34,7 @@ namespace WPFSurfacePlot3D
             IntervalY = 1;
             IntervalZ = 0.25;
             FontSize = 0.06;
-            LineThickness = 0.01;
+            LineThickness = 5;
         }
 
         public void RegisterModel(SurfacePlotModel model)
@@ -218,7 +219,7 @@ namespace WPFSurfacePlot3D
             try
             {
                 _lineThickness = 0.01;
-                _axesOffset = 1.0;
+                _sizeFactor = 1.0;
 
                 if (_model != null)
                 {
@@ -229,6 +230,9 @@ namespace WPFSurfacePlot3D
                     ShowZIsometric = _model.ShowZIsometric;
                     XAxisTicks = _model.XAxisTicks;
                     YAxisTicks = _model.YAxisTicks;
+                    LineThickness = _model.LineThickness;
+
+                    _lineMaterial = MaterialHelper.CreateMaterial(_model.LineColor);
                 }
 
 
@@ -276,8 +280,11 @@ namespace WPFSurfacePlot3D
                 double factorZ = (maxZ - minZ) / Math.Max((maxX - minX), (maxY - minY));
                 double maxDiff = Math.Max(maxX - minX, maxY - minY);
                 double minDiff = Math.Min(maxX - minX, maxY - minY);
-                _axesOffset = maxDiff * 0.04;
-                _lineThickness = (minDiff + maxDiff) / 2 * 0.005;
+                _sizeFactor = maxDiff * 0.04;
+
+                double lt = LineThickness;
+                if (lt < 1) lt = 1;
+                _lineThickness = (minDiff + maxDiff) / 2 * lt * 0.0005;
 
 
                 /* TEMP */
@@ -446,7 +453,7 @@ namespace WPFSurfacePlot3D
                     {
                         BillboardTextVisual3D label = new BillboardTextVisual3D();
                         label.Text = string.Format("{0:F2}", x);
-                        label.Position = new Point3D(xs, minY - _axesOffset, minZs - _axesOffset);
+                        label.Position = new Point3D(xs, minY - _sizeFactor, minZs - _sizeFactor);
                         axesLabelsModel.Children.Add(label);
                     }
 
@@ -470,13 +477,19 @@ namespace WPFSurfacePlot3D
                     if (showSurfaceMesh)
                     {
                         var surfacePath = new List<Point3D>();
-                        //double i = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
+                        double j = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
                         for (int i = 0; i < numberOfRows; i++)
                         {
-                            px = i * _stretchX;
-                            py = y;
-                            if (XAxisTicks != null && XAxisTicks.Length == numberOfRows) { px = XAxisTicks[i] * _stretchX; }
-                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                            if (XAxisTicks != null && XAxisTicks.Length == numberOfRows)
+                            {
+                                px = XAxisTicks[i] * _stretchX;
+                                py = y;
+                                surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                            }
+                            else
+                            {
+                                surfacePath.Add(DoBilinearInterpolation2(datapoints, i, j));
+                            }
                         }
                         surfaceMeshLinesBuilder.AddTube(surfacePath, _lineThickness, 9, false);
                     }
@@ -486,7 +499,7 @@ namespace WPFSurfacePlot3D
                     {
                         BillboardTextVisual3D label = new BillboardTextVisual3D();
                         label.Text = string.Format("{0:F2}", y);
-                        label.Position = new Point3D(minXs - _axesOffset, y, minZs - _axesOffset);
+                        label.Position = new Point3D(minXs - _sizeFactor, y, minZs - _sizeFactor);
                         axesLabelsModel.Children.Add(label);
                     }
 
@@ -527,7 +540,7 @@ namespace WPFSurfacePlot3D
                     {
                         BillboardTextVisual3D label = new BillboardTextVisual3D();
                         label.Text = string.Format("{0:F2}", z);
-                        label.Position = new Point3D(minXs - _axesOffset, maxY + _axesOffset, zs);
+                        label.Position = new Point3D(minXs - _sizeFactor, maxY + _sizeFactor, zs);
                         axesLabelsModel.Children.Add(label);
                     }
                 }
@@ -537,15 +550,15 @@ namespace WPFSurfacePlot3D
                 {
                     BillboardTextVisual3D xLabel = new BillboardTextVisual3D();
                     xLabel.Text = _model?.XAxisLabel ?? "X";
-                    xLabel.Position = new Point3D((maxX + minX) * _stretchX / 2, minY - 2.5 * _axesOffset, minZs - 2.5 * _axesOffset);
+                    xLabel.Position = new Point3D((maxX + minX) * _stretchX / 2, minY - 2.5 * _sizeFactor, minZs - 2.5 * _sizeFactor);
                     axesLabelsModel.Children.Add(xLabel);
                     BillboardTextVisual3D yLabel = new BillboardTextVisual3D();
                     yLabel.Text = _model?.YAxisLabel ?? "Y";
-                    yLabel.Position = new Point3D(minXs - 2.5 * _axesOffset, (maxY + minY) / 2, minZs - 2.5 * _axesOffset);
+                    yLabel.Position = new Point3D(minXs - 2.5 * _sizeFactor, (maxY + minY) / 2, minZs - 2.5 * _sizeFactor);
                     axesLabelsModel.Children.Add(yLabel);
                     BillboardTextVisual3D zLabel = new BillboardTextVisual3D();
                     zLabel.Text = _model?.ZAxisLabel ?? "Z";
-                    zLabel.Position = new Point3D(minXs - 2.5 * _axesOffset, maxY + 2.5 * _axesOffset, (maxZs + minZs) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
+                    zLabel.Position = new Point3D(minXs - 2.5 * _sizeFactor, maxY + 2.5 * _sizeFactor, (maxZs + minZs) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
                     axesLabelsModel.Children.Add(zLabel);
                 }
 
@@ -558,7 +571,7 @@ namespace WPFSurfacePlot3D
                             BillboardTextVisual3D lbl = new BillboardTextVisual3D();
                             lbl.Text = $"{pt.Item2:F2}";
                             p = pt.Item1;
-                            p.Z += _axesOffset;
+                            p.Z += _sizeFactor;
                             lbl.Position = p;
                             zValueLabelsModel.Children.Add(lbl);
                         }
@@ -570,8 +583,8 @@ namespace WPFSurfacePlot3D
                 }
 
                 // Create models from MeshBuilders
-                GeometryModel3D surfaceMeshLinesModel = new GeometryModel3D(surfaceMeshLinesBuilder.ToMesh(), Materials.Gray);
-                GeometryModel3D gridModel = new GeometryModel3D(gridBuilder.ToMesh(), Materials.Gray);
+                GeometryModel3D surfaceMeshLinesModel = new GeometryModel3D(surfaceMeshLinesBuilder.ToMesh(), _lineMaterial);
+                GeometryModel3D gridModel = new GeometryModel3D(gridBuilder.ToMesh(), _lineMaterial);
 
 
                 // Update model group
@@ -603,15 +616,15 @@ namespace WPFSurfacePlot3D
         {
             Model3DGroup modelGroup = new Model3DGroup();
 
+            // remove old label
+            var oldLbl = this.Children.SingleOrDefault(x => x.GetName() == "CursorLabel");
+            if (oldLbl != null) this.Children.Remove(oldLbl);
+
             if (_model?.ShowCursorBall == true)
             {
                 MeshBuilder cursorBallBuilder = new MeshBuilder();
-                cursorBallBuilder.AddSphere(p, 0.6);
+                cursorBallBuilder.AddSphere(p, _sizeFactor * 0.5);
                 modelGroup.Children.Add(new GeometryModel3D(cursorBallBuilder.ToMesh(), Materials.Blue));
-
-                // remove old label
-                var oldLbl = this.Children.SingleOrDefault(x => x.GetName() == "CursorLabel");
-                if (oldLbl != null) this.Children.Remove(oldLbl);
 
                 // create new label
                 BillboardTextVisual3D lbl = new BillboardTextVisual3D();
@@ -619,7 +632,7 @@ namespace WPFSurfacePlot3D
                 lbl.Text = $"{zValue:F2}";
                 lbl.Background = new SolidColorBrush(Colors.White);
                 var p2 = p;
-                p2.Z += 2 * _axesOffset;
+                p2.Z += 2 * _sizeFactor;
                 lbl.Position = p2;
                 lbl.SetName("CursorLabel");
                 this.Children.Add(lbl);

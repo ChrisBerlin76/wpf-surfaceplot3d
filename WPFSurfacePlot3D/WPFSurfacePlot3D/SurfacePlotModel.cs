@@ -81,7 +81,9 @@ namespace WPFSurfacePlot3D
             ShowAxes = true;
             ShowSurfaceMesh = true;
             ShowOrthographic = true;
-            
+            LineThickness = 7;
+            LineColor = Colors.Gray;
+
             SupressUpdates = false;
 
             // Initialize the DataPoints collection
@@ -634,6 +636,20 @@ namespace WPFSurfacePlot3D
             }
         }
 
+
+        private double lineThickness;
+        public double LineThickness
+        {
+            get { return lineThickness; }
+            set
+            {
+                lineThickness = value;
+                RaisePropertyChanged(nameof(LineThickness));
+                RequestUpdateVisual();
+            }
+        }
+
+
         private bool showSurfaceMesh;
         public bool ShowSurfaceMesh
         {
@@ -707,6 +723,19 @@ namespace WPFSurfacePlot3D
             }
         }
 
+
+        private bool showViewCube;
+        public bool ShowViewCube
+        {
+            get { return showViewCube; }
+            set
+            {
+                showViewCube = value;
+                RaisePropertyChanged(nameof(ShowViewCube));
+                // Only to HelixViewport3D, not to Visual3D
+            }
+        }
+
         private bool showMiniCoordinates;
         public bool ShowMiniCoordinates
         {
@@ -751,6 +780,19 @@ namespace WPFSurfacePlot3D
             {
                 showZIsometric = value;
                 RaisePropertyChanged(nameof(ShowZIsometric));
+                RequestUpdateVisual(true);
+            }
+        }
+
+
+        private Color lineColor;
+        public Color LineColor
+        {
+            get { return lineColor; }
+            set
+            {
+                lineColor = value;
+                RaisePropertyChanged(nameof(LineColor));
                 RequestUpdateVisual(true);
             }
         }
