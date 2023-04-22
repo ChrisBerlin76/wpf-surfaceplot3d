@@ -12,45 +12,56 @@ namespace WPFSurfacePlot3D
 {
     public class SurfacePlotVisual3D : ModelVisual3D
     {
-        // The modelContainer holds all the component models as children
-        private readonly ModelVisual3D _modelContainer;
-
-        private SurfacePlotModel _model;
+        private SurfacePlotModel _model;        //  = ViewModel
+        private readonly Model3DGroup _modelContainer;
+        private Model3DGroup _cursorModel;
+        private Model3DGroup _SurfacePlotModel;
+        private double _stretchX = 1;
+        private double _stretchZ = 1;
+        private double _lineThickness = 0.01;
+        private double _axesOffset = 1.0;
 
         /// <summary>
         /// The constructor for a new SurfacePlotVisual3D object.
         /// </summary>
         public SurfacePlotVisual3D()
         {
+            _modelContainer = new Model3DGroup();
+            this.Content = _modelContainer;
+
             IntervalX = 1;
             IntervalY = 1;
             IntervalZ = 0.25;
             FontSize = 0.06;
             LineThickness = 0.01;
-
-            _modelContainer = new ModelVisual3D();
-            Children.Add(_modelContainer);
         }
 
         public void RegisterModel(SurfacePlotModel model)
         {
-            if(_model != null)
+            if (_model != null)
             {
                 _model.VisualUpdateRequested -= _model_VisualUpdateRequested;
+                _model.UpdateCursorRequested -= _model_UpdateCursorRequested;
             }
 
             if (model is SurfacePlotModel)
             {
                 _model = model;
                 _model.VisualUpdateRequested += _model_VisualUpdateRequested;
+                _model.UpdateCursorRequested += _model_UpdateCursorRequested;
 
-                UpdateVisualModel();
+                UpdateSurfacePlotModel();
             }
+        }
+
+        private void _model_UpdateCursorRequested(object sender, EventArgs e)
+        {
+            UpdateCursor();
         }
 
         private void _model_VisualUpdateRequested(object sender, EventArgs e)
         {
-            UpdateVisualModel();
+            UpdateSurfacePlotModel();
         }
 
         /// <summary>
@@ -62,8 +73,8 @@ namespace WPFSurfacePlot3D
             set { SetValue(DataPointsProperty, value); }
         }
 
-        //public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(SamplePoints));
-        public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
+        public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(SamplePoints));
+        //public static readonly DependencyProperty DataPointsProperty = DependencyProperty.Register("DataPoints", typeof(Point3D[,]), typeof(SurfacePlotVisual3D), new UIPropertyMetadata(null));
 
         /// <summary>
         /// Gets or sets the color values corresponding to the Points array, as a 2D-array of doubles.
@@ -117,11 +128,6 @@ namespace WPFSurfacePlot3D
         public double[] XAxisTicks { get; set; }
         public double[] YAxisTicks { get; set; }
 
-
-
-
-
-
         // todo: make Dependency properties
         public double IntervalX { get; set; }
         public double IntervalY { get; set; }
@@ -134,7 +140,7 @@ namespace WPFSurfacePlot3D
         /// </summary>
         private static void ModelWasChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((SurfacePlotVisual3D)d).UpdateVisualModel();
+            ((SurfacePlotVisual3D)d).UpdateSurfacePlotModel();
             //((SurfacePlotVisual3D)d).RaiseModelUpdatedEvent();
         }
 
@@ -143,376 +149,483 @@ namespace WPFSurfacePlot3D
         /* Add event handler to push events up via an exposed property */
         // (thanks, http://stackoverflow.com/questions/24870539/custom-events-from-user-control-to-parent-control-in-wpf)
 
-            /*
-        public static readonly RoutedEvent ModelUpdatedEvent = EventManager.RegisterRoutedEvent("ModelUpdated", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ContentControl));
+        /*
+    public static readonly RoutedEvent ModelUpdatedEvent = EventManager.RegisterRoutedEvent("ModelUpdated", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ContentControl));
 
-        public event RoutedEventHandler ModelUpdated
-        {
-            add { controlObject.AddHandler(ModelUpdatedEvent, value); }
-            remove { controlObject.RemoveHandler(ModelUpdatedEvent, value); }
-        }
+    public event RoutedEventHandler ModelUpdated
+    {
+        add { controlObject.AddHandler(ModelUpdatedEvent, value); }
+        remove { controlObject.RemoveHandler(ModelUpdatedEvent, value); }
+    }
 
-        private void RaiseModelUpdatedEvent()
-        {
-            RoutedEventArgs newEventArgs = new RoutedEventArgs(SurfacePlotVisual3D.ModelUpdatedEvent);
-            controlObject.RaiseEvent(newEventArgs);
-        }
+    private void RaiseModelUpdatedEvent()
+    {
+        RoutedEventArgs newEventArgs = new RoutedEventArgs(SurfacePlotVisual3D.ModelUpdatedEvent);
+        controlObject.RaiseEvent(newEventArgs);
+    }
 
-        private void ValueWasChanged(object sender, RoutedEventArgs e)
-        {
-            RaiseModelUpdatedEvent();
-        } */
+    private void ValueWasChanged(object sender, RoutedEventArgs e)
+    {
+        RaiseModelUpdatedEvent();
+    } */
 
 
 
         /// <summary>
         /// This function updates the 3D visual model. It is called whenever a DependencyProperty of the SurfacePlotVisual3D object is called.
         /// </summary>
-        private void UpdateVisualModel()
+        private void UpdateSurfacePlotModel()
         {
             this.Children.Clear(); // Necessary to remove BillboardTextVisual3D objects (?)
-            Children.Add(_modelContainer);
+            CreateSurfacePlotModel();
 
-            this.Content = CreateModel();
+            UpdateCursor();
+            //UpdateTopLevelModel();  // not neccessary because already in UpdateCursor();
         }
+
+        private void UpdateCursor()
+        {
+            if (_model == null) return;
+            var p = new Point3D(_model.CursorX * _stretchX, _model.CursorY, _model.CursorZ * _stretchZ);
+            CreateCursorModel(p);
+
+            UpdateTopLevelModel();
+        }
+
+        private void UpdateTopLevelModel()
+        {
+            _modelContainer.Children.Clear();
+            if (_SurfacePlotModel != null)
+            {
+                _modelContainer.Children.Add(_SurfacePlotModel);
+            }
+
+            if (_cursorModel != null && _model?.ShowCursorBall == true)
+            {
+                _modelContainer.Children.Add(_cursorModel);
+            }
+        }
+
 
         /// <summary>
         /// This function contains all the "business logic" for constructing a SurfacePlot 3D. 
         /// </summary>
         /// <returns>A Model3DGroup containing all the component models (mesh, surface definition, grid objects, etc).</returns>
-        private Model3DGroup CreateModel()
+        private void CreateSurfacePlotModel()
         {
             var newModelGroup = new Model3DGroup();
-            double lineThickness = 0.01;
-            double axesOffset = 1.0;
 
-
-            if(_model!=null)
+            try
             {
-                DataPoints = _model.DataPoints;
-                ColorValues = _model.ColorValues;
-                SurfaceBrush= _model.CurrentSurfaceBrush;
-                ShowXyIsometric = _model.ShowXyIsometric;
-                ShowZIsometric = _model.ShowZIsometric;
-                XAxisTicks = _model.XAxisTicks;
-                YAxisTicks = _model.YAxisTicks;
-            }
+                _lineThickness = 0.01;
+                _axesOffset = 1.0;
 
-
-            if(DataPoints==null || DataPoints.GetLength(0)< 2 || DataPoints.GetLength(1) < 2)
-            {
-                return newModelGroup;
-            }
-
-            // Get relevant constaints from the DataPoints object
-            int numberOfRows = DataPoints.GetLength(0);
-            int numberOfColumns = DataPoints.GetLength(1);
-
-            // Determine the x, y, and z ranges of the DataPoints collection
-            double minX = double.MaxValue;
-            double maxX = double.MinValue;
-            double minY = double.MaxValue;
-            double maxY = double.MinValue;
-            double minZ = double.MaxValue;
-            double maxZ = double.MinValue;
-
-
-
-            for (int i = 0; i < numberOfRows; i++)
-            {
-                for (int j = 0; j < numberOfColumns; j++)
+                if (_model != null)
                 {
-                    double x = DataPoints[i, j].X;
-                    double y = DataPoints[i, j].Y;
-                    double z = DataPoints[i, j].Z;
-                    maxX = Math.Max(maxX, x);
-                    maxY = Math.Max(maxY, y);
-                    maxZ = Math.Max(maxZ, z);
-                    minX = Math.Min(minX, x);
-                    minY = Math.Min(minY, y);
-                    minZ = Math.Min(minZ, z);
+                    DataPoints = _model.DataPoints;
+                    ColorValues = _model.ColorValues;
+                    SurfaceBrush = _model.CurrentSurfaceBrush;
+                    ShowXyIsometric = _model.ShowXyIsometric;
+                    ShowZIsometric = _model.ShowZIsometric;
+                    XAxisTicks = _model.XAxisTicks;
+                    YAxisTicks = _model.YAxisTicks;
                 }
-            }
 
 
-            GetMinMaxColorValues(ColorValues, out double minColorValue, out double maxColorValue);
-
-            //double maxDiff = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
-            //double minDiff = Math.Min(Math.Min(maxX - minX, maxY - minY), maxZ - minZ);
-            double factorY = (maxY - minY) / (maxX - minX);
-            double factorZ = (maxZ - minZ) / Math.Max((maxX - minX), (maxY - minY));
-            double maxDiff = Math.Max(maxX - minX, maxY - minY);
-            double minDiff = Math.Min(maxX - minX, maxY - minY);
-            axesOffset = maxDiff * 0.04;
-            lineThickness = (minDiff + maxDiff)/2 * 0.003;
-
-
-            /* TEMP */
-            int numberOfXAxisTicks = 10;
-            int numberOfYAxisTicks = 10;
-            int numberOfZAxisTicks = 5;
-
-            if (numberOfRows <= 20) numberOfXAxisTicks = numberOfRows-1;
-            if (numberOfColumns <= 20) numberOfYAxisTicks = numberOfColumns-1;
-
-            double XAxisInterval = (maxX - minX) / numberOfXAxisTicks;
-            double YAxisInterval = (maxY - minY) / numberOfYAxisTicks;
-            double ZAxisInterval = (maxZ - minZ) / numberOfZAxisTicks;
-            /* /TEMP */
-
-            // Set color value to 0 at texture coordinate 0.5, with an even spread in either direction
-            if (Math.Abs(minColorValue) < Math.Abs(maxColorValue)) { minColorValue = -maxColorValue; }
-            else                                                   { maxColorValue = -minColorValue; }
-
-            // Set the texture coordinates by either z-value or ColorValue
-            var textureCoordinates = new Point[numberOfRows, numberOfColumns];
-            bool colorValuesValid = ColorValues != null && ColorValues.GetLength(0) == numberOfRows && ColorValues.GetLength(1) == numberOfColumns;
-            for (int i = 0; i < numberOfRows; i++)
-            {
-                for (int j = 0; j < numberOfColumns; j++)
+                if (DataPoints == null || DataPoints.GetLength(0) < 2 || DataPoints.GetLength(1) < 2)
                 {
-                    double tc;
-                    if (colorValuesValid)    { tc = (ColorValues[i, j] - minColorValue) / (maxColorValue - minColorValue); }
-                    else                     { tc = (DataPoints[i, j].Z - minZ) / (maxZ - minZ); }
-                    textureCoordinates[i, j] = new Point(tc, tc);
+                    return;
                 }
-            }
+
+                // Get relevant constaints from the DataPoints object
+                int numberOfRows = DataPoints.GetLength(0);
+                int numberOfColumns = DataPoints.GetLength(1);
+
+                // Determine the x, y, and z ranges of the DataPoints collection
+                double minX = double.MaxValue;
+                double maxX = double.MinValue;
+                double minY = double.MaxValue;
+                double maxY = double.MinValue;
+                double minZ = double.MaxValue;
+                double maxZ = double.MinValue;
 
 
-            Point3D[,] datapoints = DataPoints;
 
-            // Optional: Stretch X coordinate to get equal Size as Y
-            double stretchX = 1;
-            double stretchZ = 1;
-
-            if (ShowXyIsometric) stretchX = factorY;
-            if (ShowZIsometric) stretchZ = 1 / factorZ;
-
-
-            if(stretchX != 1 || stretchZ!=1)
-            {
-                datapoints = new Point3D[numberOfRows, numberOfColumns];
                 for (int i = 0; i < numberOfRows; i++)
                 {
                     for (int j = 0; j < numberOfColumns; j++)
                     {
-                        var p = DataPoints[i, j];
-                        p.X = p.X * stretchX;
-                        p.Z = p.Z * stretchZ;
-                        datapoints[i, j] = p;
+                        double x = DataPoints[i, j].X;
+                        double y = DataPoints[i, j].Y;
+                        double z = DataPoints[i, j].Z;
+                        maxX = Math.Max(maxX, x);
+                        maxY = Math.Max(maxY, y);
+                        maxZ = Math.Max(maxZ, z);
+                        minX = Math.Min(minX, x);
+                        minY = Math.Min(minY, y);
+                        minZ = Math.Min(minZ, z);
                     }
                 }
-            }
 
-            double maxXs = maxX * stretchX;
-            double minXs = minX * stretchX;
-            double maxZs = maxZ * stretchZ;
-            double minZs = minZ * stretchZ;
-            double ZAxisIntervalS = ZAxisInterval * stretchZ;
 
-            bool showSurfaceMesh = _model!=null ? _model.ShowSurfaceMesh : true;
-            bool showGrid = _model!=null ? _model.ShowGrid : true;
-            bool showAxes = _model!=null ? _model.ShowAxes : true;
+                GetMinMaxColorValues(ColorValues, out double minColorValue, out double maxColorValue);
 
-            // Build the surface model (i.e. the coloured surface model)
-            MeshBuilder surfaceModelBuilder = new MeshBuilder();
-            surfaceModelBuilder.AddRectangularMesh(datapoints, textureCoordinates);
+                //double maxDiff = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
+                //double minDiff = Math.Min(Math.Min(maxX - minX, maxY - minY), maxZ - minZ);
+                double factorY = (maxY - minY) / (maxX - minX);
+                double factorZ = (maxZ - minZ) / Math.Max((maxX - minX), (maxY - minY));
+                double maxDiff = Math.Max(maxX - minX, maxY - minY);
+                double minDiff = Math.Min(maxX - minX, maxY - minY);
+                _axesOffset = maxDiff * 0.04;
+                _lineThickness = (minDiff + maxDiff) / 2 * 0.005;
 
-            GeometryModel3D surfaceModel = new GeometryModel3D(surfaceModelBuilder.ToMesh(), MaterialHelper.CreateMaterial(SurfaceBrush, null, null, 1, 0));
-            surfaceModel.BackMaterial = surfaceModel.Material;
 
-            // Instantiate MeshBuilder objects for the Grid and SurfaceMeshLines meshes
-            MeshBuilder surfaceMeshLinesBuilder = new MeshBuilder();
-            MeshBuilder surfaceContourLinesBuilder = new MeshBuilder();
-            MeshBuilder gridBuilder = new MeshBuilder();
+                /* TEMP */
+                int numberOfXAxisTicks = 10;
+                int numberOfYAxisTicks = 10;
+                int numberOfZAxisTicks = 5;
 
-            // Build the axes labels model (i.e. the object that holds the axes labels and ticks)
-            ModelVisual3D axesLabelsModel = new ModelVisual3D();
+                if (numberOfRows <= 20) numberOfXAxisTicks = numberOfRows - 1;
+                if (numberOfColumns <= 20) numberOfYAxisTicks = numberOfColumns - 1;
 
-            List<double> xValues = new List<double>();
-            List<double> yValues = new List<double>();
-            List<double> zValues = new List<double>();
+                double XAxisInterval = (maxX - minX) / numberOfXAxisTicks;
+                double YAxisInterval = (maxY - minY) / numberOfYAxisTicks;
+                double ZAxisInterval = (maxZ - minZ) / numberOfZAxisTicks;
+                /* /TEMP */
 
-            double px, py;
+                // Set color value to 0 at texture coordinate 0.5, with an even spread in either direction
+                if (Math.Abs(minColorValue) < Math.Abs(maxColorValue)) { minColorValue = -maxColorValue; }
+                else { maxColorValue = -minColorValue; }
 
-            if (XAxisTicks!=null && XAxisTicks.Length>1)
-            {
-                xValues = XAxisTicks.ToList();
-            }
-            else
-            {
-                // Loop through x intervals - for the surface meshlines, the grid, and X axes ticks
-                for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
+                // Set the texture coordinates by either z-value or ColorValue
+                var textureCoordinates = new Point[numberOfRows, numberOfColumns];
+                bool colorValuesValid = ColorValues != null && ColorValues.GetLength(0) == numberOfRows && ColorValues.GetLength(1) == numberOfColumns;
+                for (int i = 0; i < numberOfRows; i++)
                 {
-                    xValues.Add(x);
-                }
-            }
-
-            if (YAxisTicks != null && YAxisTicks.Length > 1)
-            {
-                yValues = YAxisTicks.ToList();
-            }
-            else
-            {
-                // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
-                for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
-                {
-                    yValues.Add(y);
-                }
-            }
-
-
-            foreach (double x in xValues)
-            { 
-                double xs = x * stretchX;
-                
-                // Add surface mesh lines which denote intervals along the x-axis
-                if (showSurfaceMesh)
-                {
-                    var surfacePath = new List<Point3D>();
-                    double i = (x - minX) / (maxX - minX) * (numberOfRows - 1);
                     for (int j = 0; j < numberOfColumns; j++)
                     {
-                        if (YAxisTicks != null && YAxisTicks.Length == numberOfColumns) 
-                        {
-                            px = xs;
-                            py = YAxisTicks[j];
-                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
-                        }
-                        else
-                        {
-                            surfacePath.Add(DoBilinearInterpolation2(datapoints, i,j));
-                        }
+                        double tc;
+                        if (colorValuesValid) { tc = (ColorValues[i, j] - minColorValue) / (maxColorValue - minColorValue); }
+                        else { tc = (DataPoints[i, j].Z - minZ) / (maxZ - minZ); }
+                        textureCoordinates[i, j] = new Point(tc, tc);
                     }
-                    surfaceMeshLinesBuilder.AddTube(surfacePath, lineThickness, 9, false);
                 }
 
-                // Axes labels
-                if (showAxes)
-                {
-                    BillboardTextVisual3D label = new BillboardTextVisual3D();
-                    label.Text = string.Format("{0:F2}", x);
-                    label.Position = new Point3D(xs, minY - axesOffset, minZs - axesOffset);
-                    axesLabelsModel.Children.Add(label);
-                }
 
-                // Grid lines
-                if (showGrid)
-                {
-                    var gridPath = new List<Point3D>();
-                    gridPath.Add(new Point3D(xs, minY, minZs));
-                    gridPath.Add(new Point3D(xs, maxY, minZs));
-                    gridPath.Add(new Point3D(xs, maxY, maxZs));
-                    gridBuilder.AddTube(gridPath, lineThickness, 9, false);
-                }
-            }
+                Point3D[,] datapoints = DataPoints;
 
+                // Optional: Stretch X coordinate to get equal Size as Y
+                _stretchX = 1;
+                _stretchZ = 1;
 
-            foreach (double y in yValues)
-            {
-                // Add surface mesh lines which denote intervals along the y-axis
-                if (showSurfaceMesh)
+                if (ShowXyIsometric) _stretchX = factorY;
+                if (ShowZIsometric) _stretchZ = 1 / factorZ;
+
+                Point3D p;
+
+                if (_stretchX != 1 || _stretchZ != 1)
                 {
-                    var surfacePath = new List<Point3D>();
-                    double j = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
+                    datapoints = new Point3D[numberOfRows, numberOfColumns];
                     for (int i = 0; i < numberOfRows; i++)
                     {
-                        if (XAxisTicks != null && XAxisTicks.Length == numberOfRows)
+                        for (int j = 0; j < numberOfColumns; j++)
                         {
-                            px = XAxisTicks[i] * stretchX;
-                            py = y;
-                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                            p = DataPoints[i, j];
+                            p.X = p.X * _stretchX;
+                            p.Z = p.Z * _stretchZ;
+                            datapoints[i, j] = p;
                         }
-                        else
+                    }
+                }
+
+                double maxXs = maxX * _stretchX;
+                double minXs = minX * _stretchX;
+                double maxZs = maxZ * _stretchZ;
+                double minZs = minZ * _stretchZ;
+                double ZAxisIntervalS = ZAxisInterval * _stretchZ;
+
+                bool showSurfaceMesh = _model != null ? _model.ShowSurfaceMesh : true;
+                bool showSurfaceMeshZValues = _model != null ? _model.ShowSurfaceMeshZValues : true;
+                bool showAxes = _model != null ? _model.ShowAxes : true;
+                bool showGrid = showAxes;
+
+                // Build the surface model (i.e. the coloured surface model)
+                MeshBuilder surfaceModelBuilder = new MeshBuilder();
+                surfaceModelBuilder.AddRectangularMesh(datapoints, textureCoordinates);
+
+                GeometryModel3D surfaceModel = new GeometryModel3D(surfaceModelBuilder.ToMesh(), MaterialHelper.CreateMaterial(SurfaceBrush, null, null, 1, 0));
+                surfaceModel.BackMaterial = surfaceModel.Material;
+
+                // Instantiate MeshBuilder objects for the Grid and SurfaceMeshLines meshes
+                MeshBuilder surfaceMeshLinesBuilder = new MeshBuilder();
+                MeshBuilder surfaceContourLinesBuilder = new MeshBuilder();
+                MeshBuilder gridBuilder = new MeshBuilder();
+
+                // Build the axes labels model (i.e. the object that holds the axes labels and ticks)
+                ModelVisual3D axesLabelsModel = new ModelVisual3D();
+
+                List<double> xValues = new List<double>();
+                List<double> yValues = new List<double>();
+                List<double> zValues = new List<double>();
+
+                double px, py;
+
+                ModelVisual3D zValueLabelsModel = new ModelVisual3D();
+                List<Tuple<Point3D, double>> zValuePoints = new List<Tuple<Point3D, double>>();
+
+                if (XAxisTicks != null && XAxisTicks.Length > 1)
+                {
+                    xValues = XAxisTicks.ToList();
+                }
+                else
+                {
+                    // Loop through x intervals - for the surface meshlines, the grid, and X axes ticks
+                    for (double x = minX; x <= maxX + 0.0001; x += XAxisInterval)
+                    {
+                        xValues.Add(x);
+                    }
+                }
+
+                if (YAxisTicks != null && YAxisTicks.Length > 1)
+                {
+                    yValues = YAxisTicks.ToList();
+                }
+                else
+                {
+                    // Loop through y intervals - for the surface meshlines, the grid, and Y axes ticks
+                    for (double y = minY; y <= maxY + 0.0001; y += YAxisInterval)
+                    {
+                        yValues.Add(y);
+                    }
+                }
+
+
+                
+
+
+                foreach (double x in xValues)
+                {
+                    double xs = x * _stretchX;
+
+                    // Add surface mesh lines which denote intervals along the x-axis
+                    if (showSurfaceMesh || showSurfaceMeshZValues)
+                    {
+                        var surfacePath = new List<Point3D>();
+                        double i = (x - minX) / (maxX - minX) * (numberOfRows - 1);
+                        for (int j = 0; j < numberOfColumns; j++)
                         {
-                            surfacePath.Add(DoBilinearInterpolation2(datapoints, i, j));
+                            if (YAxisTicks != null && YAxisTicks.Length == numberOfColumns)
+                            {
+                                px = xs;
+                                py = YAxisTicks[j];
+                                p = DoBilinearInterpolation(datapoints, px, py);                               
+                            }
+                            else
+                            {
+                                p = DoBilinearInterpolation2(datapoints, i, j);
+                            }
+
+                            if (showSurfaceMeshZValues)
+                            {
+                                zValuePoints.Add(new Tuple<Point3D, double>(p, p.Z / _stretchZ));
+                            }
+                            if (showSurfaceMesh)
+                            {
+                                surfacePath.Add(p);
+                            }
+                        }
+
+                        if (showSurfaceMesh)
+                        {
+                            surfaceMeshLinesBuilder.AddTube(surfacePath, _lineThickness, 9, false);
                         } 
                     }
-                    surfaceMeshLinesBuilder.AddTube(surfacePath, lineThickness, 9, false);
+
+                    // Axes labels
+                    if (showAxes)
+                    {
+                        BillboardTextVisual3D label = new BillboardTextVisual3D();
+                        label.Text = string.Format("{0:F2}", x);
+                        label.Position = new Point3D(xs, minY - _axesOffset, minZs - _axesOffset);
+                        axesLabelsModel.Children.Add(label);
+                    }
+
+                    // Grid lines
+                    if (showGrid)
+                    {
+                        var gridPath = new List<Point3D>();
+                        gridPath.Add(new Point3D(xs, minY, minZs));
+                        gridPath.Add(new Point3D(xs, maxY, minZs));
+                        gridPath.Add(new Point3D(xs, maxY, maxZs));
+                        gridBuilder.AddTube(gridPath, _lineThickness, 9, false);
+                    }
                 }
 
-                // Axes labels
+
+
+
+                foreach (double y in yValues)
+                {
+                    // Add surface mesh lines which denote intervals along the y-axis
+                    if (showSurfaceMesh)
+                    {
+                        var surfacePath = new List<Point3D>();
+                        //double i = (y - minY) / (maxY - minY) * (numberOfColumns - 1);
+                        for (int i = 0; i < numberOfRows; i++)
+                        {
+                            px = i * _stretchX;
+                            py = y;
+                            if (XAxisTicks != null && XAxisTicks.Length == numberOfRows) { px = XAxisTicks[i] * _stretchX; }
+                            surfacePath.Add(DoBilinearInterpolation(datapoints, px, py));
+                        }
+                        surfaceMeshLinesBuilder.AddTube(surfacePath, _lineThickness, 9, false);
+                    }
+
+                    // Axes labels
+                    if (showAxes)
+                    {
+                        BillboardTextVisual3D label = new BillboardTextVisual3D();
+                        label.Text = string.Format("{0:F2}", y);
+                        label.Position = new Point3D(minXs - _axesOffset, y, minZs - _axesOffset);
+                        axesLabelsModel.Children.Add(label);
+                    }
+
+                    // Grid lines
+                    if (showGrid)
+                    {
+                        var gridPath = new List<Point3D>();
+                        gridPath.Add(new Point3D(minXs, y, minZs));
+                        gridPath.Add(new Point3D(maxXs, y, minZs));
+                        gridPath.Add(new Point3D(maxXs, y, maxZs));
+                        gridBuilder.AddTube(gridPath, _lineThickness, 9, false);
+                    }
+                }
+
+                // Loop through z intervals - for the grid, and Z axes ticks
+                for (double z = minZ; z <= maxZ + 0.0001; z += ZAxisInterval)
+                {
+                    //    yValues.Add(z);
+                    //}
+
+                    //foreach (double z in zValues)
+                    //{
+                    double zs = z * _stretchZ;
+
+                    // Grid lines
+                    if (showGrid)
+                    {
+                        var path = new List<Point3D>();
+                        path.Add(new Point3D(minXs, maxY, zs));
+                        path.Add(new Point3D(maxXs, maxY, zs));
+                        path.Add(new Point3D(maxXs, minY, zs));
+                        gridBuilder.AddTube(path, _lineThickness, 9, false);
+                    }
+
+
+                    // Axes labels
+                    if (showAxes)
+                    {
+                        BillboardTextVisual3D label = new BillboardTextVisual3D();
+                        label.Text = string.Format("{0:F2}", z);
+                        label.Position = new Point3D(minXs - _axesOffset, maxY + _axesOffset, zs);
+                        axesLabelsModel.Children.Add(label);
+                    }
+                }
+
+                // Add axes labels
                 if (showAxes)
                 {
-                    BillboardTextVisual3D label = new BillboardTextVisual3D();
-                    label.Text = string.Format("{0:F2}", y);
-                    label.Position = new Point3D(minXs - axesOffset, y, minZs - axesOffset);
-                    axesLabelsModel.Children.Add(label);
+                    BillboardTextVisual3D xLabel = new BillboardTextVisual3D();
+                    xLabel.Text = _model?.XAxisLabel ?? "X";
+                    xLabel.Position = new Point3D((maxX + minX) * _stretchX / 2, minY - 2.5 * _axesOffset, minZs - 2.5 * _axesOffset);
+                    axesLabelsModel.Children.Add(xLabel);
+                    BillboardTextVisual3D yLabel = new BillboardTextVisual3D();
+                    yLabel.Text = _model?.YAxisLabel ?? "Y";
+                    yLabel.Position = new Point3D(minXs - 2.5 * _axesOffset, (maxY + minY) / 2, minZs - 2.5 * _axesOffset);
+                    axesLabelsModel.Children.Add(yLabel);
+                    BillboardTextVisual3D zLabel = new BillboardTextVisual3D();
+                    zLabel.Text = _model?.ZAxisLabel ?? "Z";
+                    zLabel.Position = new Point3D(minXs - 2.5 * _axesOffset, maxY + 2.5 * _axesOffset, (maxZs + minZs) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
+                    axesLabelsModel.Children.Add(zLabel);
                 }
 
-                // Grid lines
-                if (showGrid)
+                if (showSurfaceMeshZValues)
                 {
-                    var gridPath = new List<Point3D>();
-                    gridPath.Add(new Point3D(minXs, y, minZs));
-                    gridPath.Add(new Point3D(maxXs, y, minZs));
-                    gridPath.Add(new Point3D(maxXs, y, maxZs));
-                    gridBuilder.AddTube(gridPath, lineThickness, 9, false);
+                    try
+                    {
+                        foreach (var pt in zValuePoints)
+                        {
+                            BillboardTextVisual3D lbl = new BillboardTextVisual3D();
+                            lbl.Text = $"{pt.Item2:F2}";
+                            p = pt.Item1;
+                            p.Z += _axesOffset;
+                            lbl.Position = p;
+                            zValueLabelsModel.Children.Add(lbl);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Exception occured for showSurfaceMeshZValues");
+                    }
                 }
-            }
 
-            // Loop through z intervals - for the grid, and Z axes ticks
-            for (double z = minZ; z <= maxZ + 0.0001; z += ZAxisInterval)
+                // Create models from MeshBuilders
+                GeometryModel3D surfaceMeshLinesModel = new GeometryModel3D(surfaceMeshLinesBuilder.ToMesh(), Materials.Gray);
+                GeometryModel3D gridModel = new GeometryModel3D(gridBuilder.ToMesh(), Materials.Gray);
+
+
+                // Update model group
+                this.Children.Add(axesLabelsModel);
+                newModelGroup.Children.Add(surfaceModel);
+                newModelGroup.Children.Add(surfaceMeshLinesModel);
+                newModelGroup.Children.Add(gridModel);
+
+                if (showSurfaceMeshZValues)
+                {
+                    this.Children.Add(zValueLabelsModel);
+                }
+
+                //ScaleTransform3D surfaceTransform = new ScaleTransform3D(20, 20, 20, 0, 0, 0);
+                //newModelGroup.Transform = surfaceTransform;
+
+
+
+            }
+            catch (Exception ex)
             {
-            //    yValues.Add(z);
-            //}
-
-            //foreach (double z in zValues)
-            //{
-                double zs = z * stretchZ;
-
-                // Grid lines
-                if (showGrid)
-                {
-                    var path = new List<Point3D>();
-                    path.Add(new Point3D(minXs, maxY, zs));
-                    path.Add(new Point3D(maxXs, maxY, zs));
-                    path.Add(new Point3D(maxXs, minY, zs));
-                    gridBuilder.AddTube(path, lineThickness, 9, false);
-                }
-
-
-                // Axes labels
-                if (showAxes)
-                {
-                    BillboardTextVisual3D label = new BillboardTextVisual3D();
-                    label.Text = string.Format("{0:F2}", z);
-                    label.Position = new Point3D(minXs - axesOffset, maxY + axesOffset, zs);
-                    axesLabelsModel.Children.Add(label);
-                }
+                Console.WriteLine($"Exception in CreateModel. {ex.Message}");
             }
 
-            // Add axes labels
-            if (showAxes)
+            _SurfacePlotModel = newModelGroup;
+        }
+
+        private void CreateCursorModel(Point3D p)
+        {
+            Model3DGroup modelGroup = new Model3DGroup();
+
+            if (_model?.ShowCursorBall == true)
             {
-                BillboardTextVisual3D xLabel = new BillboardTextVisual3D();
-                xLabel.Text = _model?.XAxisLabel ?? "X";
-                xLabel.Position = new Point3D((maxX + minX) * stretchX / 2, minY - 2.5 * axesOffset, minZs - 2.5 * axesOffset);
-                axesLabelsModel.Children.Add(xLabel);
-                BillboardTextVisual3D yLabel = new BillboardTextVisual3D();
-                yLabel.Text = _model?.YAxisLabel ?? "Y";
-                yLabel.Position = new Point3D(minXs - 2.5 * axesOffset, (maxY + minY) / 2, minZs - 2.5 * axesOffset);
-                axesLabelsModel.Children.Add(yLabel);
-                BillboardTextVisual3D zLabel = new BillboardTextVisual3D();
-                zLabel.Text = _model?.ZAxisLabel ?? "Z";
-                zLabel.Position = new Point3D(minXs - 2.5 * axesOffset, maxY + 2.5 * axesOffset, (maxZs + minZs) / 2); // Note: trying to find the midpoint of minZ, maxZ doesn't work when minZ = -0.5 and maxZ = 0.5...
-                axesLabelsModel.Children.Add(zLabel);
+                MeshBuilder cursorBallBuilder = new MeshBuilder();
+                cursorBallBuilder.AddSphere(p, 0.6);
+                modelGroup.Children.Add(new GeometryModel3D(cursorBallBuilder.ToMesh(), Materials.Blue));
+
+                // remove old label
+                var oldLbl = this.Children.SingleOrDefault(x => x.GetName() == "CursorLabel");
+                if (oldLbl != null) this.Children.Remove(oldLbl);
+
+                // create new label
+                BillboardTextVisual3D lbl = new BillboardTextVisual3D();
+                double zValue = p.Z / _stretchZ;
+                lbl.Text = $"{zValue:F2}";
+                lbl.Background = new SolidColorBrush(Colors.White);
+                var p2 = p;
+                p2.Z += 2 * _axesOffset;
+                lbl.Position = p2;
+                lbl.SetName("CursorLabel");
+                this.Children.Add(lbl);
             }
 
-            // Create models from MeshBuilders
-            GeometryModel3D surfaceMeshLinesModel = new GeometryModel3D(surfaceMeshLinesBuilder.ToMesh(), Materials.Black);
-            GeometryModel3D gridModel = new GeometryModel3D(gridBuilder.ToMesh(), Materials.Black);
-
-            // Update model group
-            this.Children.Add(axesLabelsModel);
-            newModelGroup.Children.Add(surfaceModel);
-            newModelGroup.Children.Add(surfaceMeshLinesModel);
-            newModelGroup.Children.Add(gridModel);
-
-            //ScaleTransform3D surfaceTransform = new ScaleTransform3D(20, 20, 20, 0, 0, 0);
-            //newModelGroup.Transform = surfaceTransform;
-
-            return newModelGroup;
+            _cursorModel = modelGroup;
         }
 
         private void GetMinMaxColorValues(double[,] colorValues, out double minColorValue, out double maxColorValue)
@@ -604,7 +717,6 @@ namespace WPFSurfacePlot3D
         }
 
 
-
         // <summary>
         /// The bilinear interpolation method calculates a weighted "average" between four points on a discrete grid, allowing us to build a "smooth" path between consecutive points along a grid.
         /// </summary>
@@ -633,7 +745,6 @@ namespace WPFSurfacePlot3D
             Vector3D v1 = v01 * (1 - u) + v11 * u;
             return (v0 * (1 - v) + v1 * v).ToPoint3D();
         }
-
 
 
         /// <summary>

@@ -10,7 +10,7 @@
     
     <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
-            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="11*"/>
         </Grid.RowDefinitions>
 
@@ -18,6 +18,7 @@
             Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
             Grid.Row="0" 
             Margin="10"
+            FontSize="14" FontWeight="DemiBold"
             HorizontalAlignment="Center"
             />
 
@@ -25,21 +26,22 @@
             x:Name="hViewport" 
             Grid.Row="1" 
             DataContextChanged="hViewport_DataContextChanged"
-            ZoomExtentsWhenLoaded="False" 
+            ZoomExtentsWhenLoaded="True" 
             PanGesture="RightClick" 
             RotateGesture="LeftClick"
-            ShowViewCube="true"
+            ShowViewCube="True"
             Orthographic="{Binding ShowOrthographic, UpdateSourceTrigger=PropertyChanged}"
             MouseDoubleClick="hViewport_MouseDoubleClick"
             ShowCoordinateSystem="{Binding ShowMiniCoordinates, UpdateSourceTrigger=PropertyChanged}" 
             CoordinateSystemLabelX="{Binding XAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
             CoordinateSystemLabelY="{Binding YAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
             CoordinateSystemLabelZ="{Binding ZAxisLabel, UpdateSourceTrigger=PropertyChanged}" 
+            
             >
             <h:HelixViewport3D.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="WhiteSmoke" Offset="1" />
-                    <GradientStop Color="White" Offset="0"/>
+                    <GradientStop Color="#ddd" Offset="1" />
+                    <GradientStop Color="White" Offset="0.8"/>
                 </LinearGradientBrush>
             </h:HelixViewport3D.Background>
 

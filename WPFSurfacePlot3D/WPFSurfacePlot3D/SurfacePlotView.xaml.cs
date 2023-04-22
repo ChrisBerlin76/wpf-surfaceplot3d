@@ -1,9 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace WPFSurfacePlot3D
 {
@@ -105,7 +109,37 @@ namespace WPFSurfacePlot3D
 
         //public static readonly DependencyProperty ShowOrthographicProperty = DependencyProperty.Register("ShowOrthographic", typeof(bool), typeof(SurfacePlotView), new FrameworkPropertyMetadata(true));
 
-        public void ZoomToExtents(double animationTime = 400)
+        public void ExportImage()
+        {
+            string fileName = "image.png";
+
+            if(DataContext is SurfacePlotModel spm)
+            {
+                fileName = spm.Title;
+            }
+
+            var dlg = new SaveFileDialog();
+            dlg.Filter = "PNG Image|*.png";
+            dlg.FileName = fileName;
+            if (dlg.ShowDialog() != true) return;
+
+            // Create a render target bitmap
+            RenderTargetBitmap renderBitmap = new RenderTargetBitmap((int)this.ActualWidth, (int)this.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            renderBitmap.Render(this);
+
+            // Create a PNG encoder
+            PngBitmapEncoder pngEncoder = new PngBitmapEncoder();
+            pngEncoder.Frames.Add(BitmapFrame.Create(renderBitmap));
+
+            // Save the PNG image to a file
+            using (FileStream fileStream = new FileStream(dlg.FileName, FileMode.Create))
+            {
+                pngEncoder.Save(fileStream);
+            }
+        }
+
+
+        public void ZoomToExtents(double animationTime=400)
         {
             // FieldOfView resp. NearPlaneDistance are set to default again
             // because sometimes these values change to unreasonable values
@@ -156,7 +190,7 @@ namespace WPFSurfacePlot3D
         private void _zoomExtentsTimer_Tick(object sender, EventArgs e)
         {
             _zoomExtentsTimer.Stop();
-            ZoomToExtents();
+            ZoomToExtents(0);
         }
 
 

@@ -74,15 +74,14 @@ namespace WPFSurfacePlot3D
             YAxisLabel = "Y";
             ZAxisLabel = "Z";
 
-
+            ColorCoding = ColorCoding.ByValueZ;
             BrushPreset = BrushPreset.BlueWhiteRed;
             CustomSurfaceBrush = BrushHelper.CreateGradientBrush(Colors.DarkViolet, Colors.Red, Colors.Goldenrod, Colors.ForestGreen, Colors.Lime, Colors.White);
-            ShowGrid = true;
+            
             ShowAxes = true;
             ShowSurfaceMesh = true;
             ShowOrthographic = true;
-            ColorCoding = ColorCoding.ByValueZ;
-
+            
             SupressUpdates = false;
 
             // Initialize the DataPoints collection
@@ -94,6 +93,8 @@ namespace WPFSurfacePlot3D
 
         public event EventHandler ZoomToContentRequested;
 
+        public event EventHandler UpdateCursorRequested;
+
 
         #region === Public Methods ===
 
@@ -103,6 +104,7 @@ namespace WPFSurfacePlot3D
             PlotFunction(function, -10, 10);
             ShowOrthographic = true;
         }
+
 
         public void PlotData(double[,] zData2DArray)
         {
@@ -325,6 +327,11 @@ namespace WPFSurfacePlot3D
             {
                 ZoomToContentRequested?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        private void RequestUpdateCursor()
+        {
+            UpdateCursorRequested?.Invoke(this, EventArgs.Empty);
         }
 
 
@@ -639,7 +646,6 @@ namespace WPFSurfacePlot3D
             }
         }
 
-
         private bool showSurfaceMeshZValues;
         public bool ShowSurfaceMeshZValues
         {
@@ -649,6 +655,19 @@ namespace WPFSurfacePlot3D
                 showSurfaceMeshZValues = value;
                 RaisePropertyChanged(nameof(ShowSurfaceMeshZValues));
                 RequestUpdateVisual();
+            }
+        }
+
+        private bool showCursorBall;
+        public bool ShowCursorBall
+        {
+            get { return showCursorBall; }
+            set
+            {
+                showCursorBall = value;
+                RaisePropertyChanged(nameof(ShowCursorBall));
+                RequestUpdateCursor();
+                //RequestUpdateVisual();
             }
         }
 
@@ -664,17 +683,6 @@ namespace WPFSurfacePlot3D
         //    }
         //}
 
-        private bool showGrid;
-        public bool ShowGrid
-        {
-            get { return showGrid; }
-            set
-            {
-                showGrid = value;
-                RaisePropertyChanged(nameof(ShowGrid));
-                RequestUpdateVisual();
-            }
-        }
 
         private bool showAxes;
         public bool ShowAxes
@@ -747,6 +755,43 @@ namespace WPFSurfacePlot3D
             }
         }
 
+
+        private double cursorX;
+        public double CursorX
+        {
+            get { return cursorX; }
+            set
+            {
+                cursorX = value;
+                RaisePropertyChanged(nameof(CursorX));
+                RequestUpdateCursor();
+            }
+        }
+
+        private double cursorY;
+        public double CursorY
+        {
+            get { return cursorY; }
+            set
+            {
+                cursorY = value;
+                RaisePropertyChanged(nameof(CursorY));
+                RequestUpdateCursor();
+            }
+        }
+
+        private double cursorZ;
+        public double CursorZ
+        {
+            get { return cursorZ; }
+            set
+            {
+                cursorZ = value;
+                RaisePropertyChanged(nameof(CursorZ));
+                RequestUpdateCursor();
+            }
+        }
+
         #endregion
 
         /* // Do we actually need to keep any of these persistent variables for any reason...? (binding?)
@@ -764,7 +809,7 @@ namespace WPFSurfacePlot3D
 
         /* OLD STUFF */
 
-        
+
 
 
 
