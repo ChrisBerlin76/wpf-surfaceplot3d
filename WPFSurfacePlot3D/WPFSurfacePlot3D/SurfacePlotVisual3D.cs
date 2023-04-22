@@ -18,11 +18,11 @@ namespace WPFSurfacePlot3D
         private readonly Model3DGroup _modelContainer;
         private Model3DGroup _cursorModel;
         private Model3DGroup _SurfacePlotModel;
-        private double _stretchX = 1;
-        private double _stretchZ = 1;
+        private double _stretchX = 1;           // Stretching factor for isometric view x/y
+        private double _stretchZ = 1;           // Stretching factor for isometric view z/xy
         private double _lineThickness = 0.01;
-        private Material _lineMaterial = MaterialHelper.CreateMaterial(Colors.Black);
-        private double _sizeFactor = 1.0;
+        private double _sizeFactor = 1.0;       // Size factor, depending on total extents
+        private Material _lineMaterial;
 
         /// <summary>
         /// The constructor for a new SurfacePlotVisual3D object.
@@ -31,6 +31,8 @@ namespace WPFSurfacePlot3D
         {
             _modelContainer = new Model3DGroup();
             this.Content = _modelContainer;
+
+            _lineMaterial = MaterialHelper.CreateMaterial(Colors.Black);
 
             IntervalX = 1;
             IntervalY = 1;
@@ -331,7 +333,6 @@ namespace WPFSurfacePlot3D
                 if (ShowZIsometric) _stretchZ = 1 / factorZ;
 
                 Point3D p;
-
                 if (_stretchX != 1 || _stretchZ != 1)
                 {
                     datapoints = new Point3D[numberOfRows, numberOfColumns];
@@ -380,7 +381,7 @@ namespace WPFSurfacePlot3D
                 double px, py;
 
                 ModelVisual3D zValueLabelsModel = new ModelVisual3D();
-                List<Tuple<Point3D, double>> zValuePoints = new List<Tuple<Point3D, double>>();
+                List<Tuple<Point3D, double>> zValueLabelPoints = new List<Tuple<Point3D, double>>();
 
                 if (XAxisTicks != null && XAxisTicks.Length > 1)
                 {
@@ -414,7 +415,7 @@ namespace WPFSurfacePlot3D
                     double xs = x * _stretchX;
 
                     // Add surface mesh lines which denote intervals along the x-axis
-                    if (showSurfaceMesh || showSurfaceMeshZValues)
+                    if (showSurfaceMesh)
                     {
                         var surfacePath = new List<Point3D>();
                         double i = (x - minX) / (maxX - minX) * (numberOfRows - 1);
@@ -426,17 +427,11 @@ namespace WPFSurfacePlot3D
                                 px = xs;
                                 py = YAxisTicks[j];
                                 p = DoBilinearInterpolationUnequalSpacing(datapoints, px, py);
-
-                                if (showSurfaceMeshZValues)
-                                {
-                                    zValuePoints.Add(new Tuple<Point3D, double>(p, p.Z / _stretchZ));
-                                }
                             }
                             else
                             {
                                 p = DoBilinearInterpolation(datapoints, i, j);
                             }
-
 
                             if (showSurfaceMesh)
                             {
@@ -591,7 +586,7 @@ namespace WPFSurfacePlot3D
                             var a = contourPoints[i];
                             var b = contourPoints[i + 1];
 
-                            // distance threshold in order to seperate different lines/areas of contour points
+                            // Seperation of different areas, by point distance threshold
                             double dt = distMedian * 2.5;
                             if (Math.Abs(a.X - b.X) > dt || Math.Abs(a.Y - b.Y) > dt) continue;
 
@@ -621,7 +616,20 @@ namespace WPFSurfacePlot3D
                 {
                     try
                     {
-                        foreach (var pt in zValuePoints)
+                        foreach (var x in xValues)
+                        {
+                            foreach (var y in yValues)
+                            {
+                                p = DoBilinearInterpolationUnequalSpacing(DataPoints, x, y);
+                                var p2 = p;
+                                p2.X *= _stretchX;
+                                p2.Z *= _stretchZ;
+                                zValueLabelPoints.Add(new Tuple<Point3D, double>(p2, p.Z));
+                            }
+                        }
+
+                        
+                        foreach (var pt in zValueLabelPoints)
                         {
                             BillboardTextVisual3D lbl = new BillboardTextVisual3D();
                             lbl.Text = $"{pt.Item2:F2}";
@@ -630,6 +638,8 @@ namespace WPFSurfacePlot3D
                             lbl.Position = p;
                             zValueLabelsModel.Children.Add(lbl);
                         }
+
+                        this.Children.Add(zValueLabelsModel);
                     }
                     catch (Exception)
                     {
@@ -647,12 +657,6 @@ namespace WPFSurfacePlot3D
                 newModelGroup.Children.Add(surfaceModel);
                 newModelGroup.Children.Add(surfaceMeshLinesModel);
                 newModelGroup.Children.Add(gridModel);
-
-                if (showSurfaceMeshZValues)
-                {
-                    this.Children.Add(zValueLabelsModel);
-                }
-
             }
             catch (Exception ex)
             {

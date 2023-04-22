@@ -84,7 +84,7 @@ namespace WPFSurfacePlot3D
             LineThickness = 7;
             LineColor = Colors.Gray;
 
-            ContourLinesZ = new double[] { 0, 1, 2, 3 };
+            ContourLinesZ = new double[] { 0, 2, 4, 6 };
 
             SupressUpdates = false;
 
