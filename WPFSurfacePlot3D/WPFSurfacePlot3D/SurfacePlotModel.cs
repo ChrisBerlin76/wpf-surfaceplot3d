@@ -1,5 +1,6 @@
 ﻿using HelixToolkit.Wpf;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -54,9 +55,10 @@ namespace WPFSurfacePlot3D
         private int defaultFunctionSampleSize = 100;
 
         // Brush presets
-        private readonly Brush BlueWhiteRedBrush = BrushHelper.CreateGradientBrush(Colors.DarkBlue, Colors.LightBlue, Colors.White, Colors.Pink, Colors.Red);
-        private readonly Brush GreenYellowRedBrush = BrushHelper.CreateGradientBrush(Colors.Green, Colors.Yellow, Colors.Red);
+        private readonly Brush BlueWhiteRedBrush = CreateGradientBrush("#FF2D6BE8", "#FFBDD3FF", "#FFFFFFFF", "#FFFFC6C3", "#FFFF645C");
+        private readonly Brush GreenYellowRedBrush = CreateGradientBrush("#FF5BAF4A", "#FFD3E391", "#FFF9F34D", "#FFE6A736", "#FFFF645C");
         private readonly Brush BlackWhiteBrush = BrushHelper.CreateGradientBrush(Color.FromRgb(20,20,20), Colors.White);
+
 
         private double _xMax, _xMin, _yMax, _yMin, _zMax, _zMin;
 
@@ -930,6 +932,33 @@ namespace WPFSurfacePlot3D
             }
 
             return K;
+        }
+
+
+
+        public static LinearGradientBrush CreateGradientBrush(params string[] hexCodes)
+        {
+            List<Color> colors = new List<Color>();
+            foreach (string hexCode in hexCodes)
+            {
+                colors.Add(HexToColor(hexCode));
+            }
+            return BrushHelper.CreateGradientBrush(colors);
+        }
+
+
+        public static Color HexToColor(string hexColor)
+        {
+            byte offset = 0;
+            if(hexColor.StartsWith("#") && hexColor.Length==9) { offset = 2; }
+
+
+            byte red = byte.Parse(hexColor.Substring(1 + offset, 2), System.Globalization.NumberStyles.HexNumber);
+            byte green = byte.Parse(hexColor.Substring(3 + offset, 2), System.Globalization.NumberStyles.HexNumber);
+            byte blue = byte.Parse(hexColor.Substring( 5+ offset, 2), System.Globalization.NumberStyles.HexNumber);
+
+            Color color = Color.FromArgb(255, red, green, blue);
+            return color;
         }
     }
 }

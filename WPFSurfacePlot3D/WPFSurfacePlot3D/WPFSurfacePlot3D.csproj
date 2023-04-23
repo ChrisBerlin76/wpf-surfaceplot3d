@@ -87,11 +87,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ColorScaleTester.xaml.cs">
+      <DependentUpon>ColorScaleTester.xaml</DependentUpon>
+    </Compile>
     <Compile Include="SurfacePlotView.xaml.cs">
       <DependentUpon>SurfacePlotView.xaml</DependentUpon>
     </Compile>
     <Compile Include="SurfacePlotModel.cs" />
     <Compile Include="SurfacePlotVisual3D.cs" />
+    <Page Include="ColorScaleTester.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="WPFSurfacePlot3D.ColorScaleTester"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WPFSurfacePlot3D"
+             mc:Ignorable="d" 
+             d:DesignHeight="250" d:DesignWidth="400">
+
+    <StackPanel>
+        <Border Height="50" Margin="0,0,0,20">
+            <Border.Background>
+                <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                    <GradientStop Color="#FF7FDA6C" Offset="0"/>
+                    <GradientStop Color="#FFD3E391" Offset="0.25"/>
+                    <GradientStop Color="#FFF9F34D" Offset="0.5"/>
+                    <GradientStop Color="#FFE6A736" Offset="0.75"/>
+                    <GradientStop Color="#FFFF645C" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Border Height="50" Margin="0,0,0,20">
+            <Border.Background>
+                <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                    <GradientStop Color="#FF5BAF4A" Offset="0"/>
+                    <GradientStop Color="#FFD3E391" Offset="0.25"/>
+                    <GradientStop Color="#FFF9F34D" Offset="0.5"/>
+                    <GradientStop Color="#FFE6A736" Offset="0.75"/>
+                    <GradientStop Color="#FFFF645C" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Border Height="50" Margin="0,0,0,20">
+            <Border.Background>
+                <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
+                    <GradientStop Color="#FF2D6BE8" Offset="0"/>
+                    <GradientStop Color="#FFBDD3FF" Offset="0.25"/>
+                    <GradientStop Color="White" Offset="0.5"/>
+                    <GradientStop Color="#FFFFC6C3" Offset="0.75"/>
+                    <GradientStop Color="#FFFF645C" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+
+    </StackPanel>
+</UserControl>
